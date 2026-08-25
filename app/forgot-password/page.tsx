@@ -19,10 +19,12 @@ export default function ForgotPasswordPage() {
     setMessage("");
 
     try {
-      // The reset link in the email points at /auth/callback, which exchanges
-      // the PKCE code for a session and then forwards to /reset-password.
+      // The reset link in the email points at /auth/confirm, which verifies
+      // the token_hash to establish a recovery session, then forwards to
+      // /reset-password. Requires the "Reset Password" email template to use
+      // the token_hash strategy (see deployment notes).
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        redirectTo: `${window.location.origin}/auth/confirm?next=/reset-password`,
       });
 
       if (error) throw error;
