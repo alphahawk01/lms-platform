@@ -63,16 +63,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="flex min-h-screen items-center justify-center bg-pd-navy-deep p-6">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-pd-navy p-8 shadow-2xl shadow-black/40">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">
-            LMS Platform
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">
+            PREMIER<span className="text-pd-red">DATA</span>
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <div className="mt-3 h-1 w-12 rounded-full bg-pd-red" />
+
+          <p className="mt-4 text-sm text-slate-300">
             {isSignUp
-              ? "Create your account to start learning."
+              ? "Create your account to start your training."
               : "Sign in to continue your training."}
           </p>
         </div>
@@ -80,7 +82,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {isSignUp && (
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-slate-200">
                 Full name
               </label>
 
@@ -89,14 +91,14 @@ export default function LoginPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-900"
+                className="w-full rounded-lg border border-white/15 bg-pd-navy-surface px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-pd-red"
                 placeholder="Your full name"
               />
             </div>
           )}
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-200">
               Email address
             </label>
 
@@ -105,21 +107,21 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-white/15 bg-pd-navy-surface px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-pd-red"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-medium text-slate-700">
+              <label className="block text-sm font-medium text-slate-200">
                 Password
               </label>
 
               {!isSignUp && (
                 <Link
                   href="/forgot-password"
-                  className="text-sm font-medium text-slate-900 underline"
+                  className="text-sm font-medium text-pd-red hover:text-pd-red-hover"
                 >
                   Forgot password?
                 </Link>
@@ -132,13 +134,13 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-white/15 bg-pd-navy-surface px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-pd-red"
               placeholder="••••••••"
             />
           </div>
 
           {message && (
-            <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+            <div className="rounded-lg border border-white/10 bg-pd-navy-surface p-3 text-sm text-slate-200">
               {message}
             </div>
           )}
@@ -146,7 +148,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-pd-red px-4 py-3 font-semibold text-white transition hover:bg-pd-red-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading
               ? "Please wait..."
@@ -156,7 +158,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-slate-500">
+        <div className="mt-6 text-center text-sm text-slate-400">
           {isSignUp
             ? "Already have an account?"
             : "Don't have an account?"}
@@ -167,7 +169,7 @@ export default function LoginPage() {
               setIsSignUp(!isSignUp);
               setMessage("");
             }}
-            className="ml-2 font-medium text-slate-900 underline"
+            className="ml-2 font-semibold text-pd-red hover:text-pd-red-hover"
           >
             {isSignUp ? "Sign in" : "Create one"}
           </button>

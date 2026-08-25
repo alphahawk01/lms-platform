@@ -71,24 +71,26 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="flex min-h-screen items-center justify-center bg-pd-navy-deep p-6">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-pd-navy p-8 shadow-2xl shadow-black/40">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">
             Set a new password
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <div className="mt-3 h-1 w-12 rounded-full bg-pd-red" />
+
+          <p className="mt-4 text-sm text-slate-300">
             Choose a new password for your account.
           </p>
         </div>
 
         {checkingSession ? (
-          <p className="text-sm text-slate-500">Verifying your reset link...</p>
+          <p className="text-sm text-slate-300">Verifying your reset link...</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-slate-200">
                 New password
               </label>
 
@@ -99,13 +101,13 @@ export default function ResetPasswordPage() {
                 required
                 minLength={6}
                 disabled={done}
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-900 disabled:bg-slate-50"
+                className="w-full rounded-lg border border-white/15 bg-pd-navy-surface px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-pd-red disabled:opacity-60"
                 placeholder="••••••••"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-slate-200">
                 Confirm new password
               </label>
 
@@ -116,13 +118,13 @@ export default function ResetPasswordPage() {
                 required
                 minLength={6}
                 disabled={done}
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-900 disabled:bg-slate-50"
+                className="w-full rounded-lg border border-white/15 bg-pd-navy-surface px-4 py-3 text-white placeholder-slate-500 outline-none transition focus:border-pd-red disabled:opacity-60"
                 placeholder="••••••••"
               />
             </div>
 
             {message && (
-              <div className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
+              <div className="rounded-lg border border-white/10 bg-pd-navy-surface p-3 text-sm text-slate-200">
                 {message}
               </div>
             )}
@@ -130,7 +132,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading || done}
-              className="w-full rounded-lg bg-slate-900 px-4 py-3 font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-pd-red px-4 py-3 font-semibold text-white transition hover:bg-pd-red-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Updating..." : "Update password"}
             </button>

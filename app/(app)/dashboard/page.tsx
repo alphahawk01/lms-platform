@@ -47,7 +47,9 @@ export default async function DashboardPage() {
           Training Dashboard
         </h1>
 
-        <p className="mt-2 text-slate-500">
+        <div className="mt-3 h-1 w-12 rounded-full bg-pd-red" />
+
+        <p className="mt-4 text-slate-500">
           Track your learning and continue where you left off.
         </p>
       </div>
@@ -97,10 +99,10 @@ export default async function DashboardPage() {
 
         {!assignments || assignments.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pd-red/10">
               <BookOpen
                 size={28}
-                className="text-slate-500"
+                className="text-pd-red"
               />
             </div>
 
@@ -125,7 +127,7 @@ export default async function DashboardPage() {
                   key={assignment.id}
                   className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
                 >
-                  <div className="h-32 bg-slate-100" />
+                  <div className="h-32 bg-gradient-to-br from-pd-navy to-pd-navy-surface" />
 
                   <div className="p-5">
                     <h3 className="font-semibold text-slate-900">
@@ -168,7 +170,7 @@ function DashboardStat({
           </p>
         </div>
 
-        <div className="rounded-xl bg-slate-100 p-3 text-slate-700">
+        <div className="rounded-xl bg-pd-red/10 p-3 text-pd-red">
           {icon}
         </div>
       </div>

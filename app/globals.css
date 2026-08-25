@@ -3,6 +3,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Premier Data brand palette */
+  --pd-navy: #0a1830;
+  --pd-navy-deep: #061020;
+  --pd-navy-surface: #0f2340;
+  --pd-red: #e11b2d;
+  --pd-red-hover: #c4141f;
 }
 
 @theme inline {
@@ -10,6 +17,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Expose brand colors as Tailwind utilities (bg-pd-navy, text-pd-red, etc.) */
+  --color-pd-navy: var(--pd-navy);
+  --color-pd-navy-deep: var(--pd-navy-deep);
+  --color-pd-navy-surface: var(--pd-navy-surface);
+  --color-pd-red: var(--pd-red);
+  --color-pd-red-hover: var(--pd-red-hover);
 }
 
 @media (prefers-color-scheme: dark) {

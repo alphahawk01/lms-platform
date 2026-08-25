@@ -51,7 +51,7 @@ export default async function AppLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pd-red text-sm font-semibold text-white">
               {(profile?.full_name || user.email || "U")
                 .charAt(0)
                 .toUpperCase()}

@@ -56,20 +56,22 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex min-h-screen w-64 flex-col border-r border-slate-200 bg-white">
-      <div className="flex h-20 items-center gap-3 border-b border-slate-200 px-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
+    <aside className="flex min-h-screen w-64 flex-col border-r border-white/10 bg-pd-navy">
+      <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pd-red text-white">
           <GraduationCap size={22} />
         </div>
 
         <div>
-          <h1 className="font-bold text-slate-900">LMS Platform</h1>
-          <p className="text-xs text-slate-500">Training & Learning</p>
+          <h1 className="font-extrabold tracking-tight text-white">
+            PREMIER<span className="text-pd-red">DATA</span>
+          </h1>
+          <p className="text-xs text-slate-400">Training & Learning</p>
         </div>
       </div>
 
       <nav className="flex-1 p-4">
-        <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Learning
         </p>
 
@@ -84,8 +86,8 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                   active
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-pd-red text-white"
+                    : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Icon size={19} />
@@ -97,9 +99,9 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
 
         {isAdmin && (
           <>
-            <div className="my-7 border-t border-slate-200" />
+            <div className="my-7 border-t border-white/10" />
 
-            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Administration
             </p>
 
@@ -114,8 +116,8 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
                     href={item.href}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                       active
-                        ? "bg-slate-900 text-white"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        ? "bg-pd-red text-white"
+                        : "text-slate-300 hover:bg-white/10 hover:text-white"
                     }`}
                   >
                     <Icon size={19} />
@@ -128,17 +130,17 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
         )}
       </nav>
 
-      <div className="border-t border-slate-200 p-4">
+      <div className="border-t border-white/10 p-4">
         <Link
-          href="/settings"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+          href="/account"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
         >
           <Settings size={19} />
-          Settings
+          Account
         </Link>
 
         {isAdmin && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-slate-200">
             <ShieldCheck size={15} />
             Administrator
           </div>
