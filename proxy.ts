@@ -37,9 +37,20 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Public routes reachable without being logged in (auth flows).
+  const publicPaths = [
+    "/login",
+    "/forgot-password",
+    "/reset-password",
+    "/auth",
+  ];
+  const isPublicPath = publicPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
   // Redirect unauthenticated users away from protected page routes.
   // API routes are excluded from the matcher below and enforce their own auth.
-  if (!user && !request.nextUrl.pathname.startsWith("/login")) {
+  if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
