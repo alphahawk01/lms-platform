@@ -5,10 +5,32 @@ import { CreateCourseButton } from "@/components/create-course-button";
 export default async function CourseBuilderPage() {
   const supabase = await createClient();
 
-  const { data: courses } = await supabase
+  type CourseRow = {
+    id: string;
+    title: string;
+    status: string;
+    thumbnail_url: string | null;
+    description: string | null;
+    course_categories?: { name: string } | null;
+  };
+
+  // Try to include the category via the FK join; if the category schema
+  // isn't set up yet, fall back to a plain course query so the list still works.
+  const withCategory = await supabase
     .from("courses")
-    .select("*")
+    .select("*, course_categories ( name )")
     .order("created_at", { ascending: false });
+
+  const plain = withCategory.error
+    ? await supabase
+        .from("courses")
+        .select("*")
+        .order("created_at", { ascending: false })
+    : null;
+
+  const courses = ((withCategory.error
+    ? plain?.data
+    : withCategory.data) ?? []) as unknown as CourseRow[];
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -67,17 +89,25 @@ export default async function CourseBuilderPage() {
               <div className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                        course.status === "published"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {course.status === "published"
-                        ? "Published"
-                        : "Draft"}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                          course.status === "published"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {course.status === "published"
+                          ? "Published"
+                          : "Draft"}
+                      </span>
+
+                      {course.course_categories?.name && (
+                        <span className="inline-flex rounded-full bg-pd-red/10 px-2.5 py-1 text-xs font-medium text-pd-red">
+                          {course.course_categories.name}
+                        </span>
+                      )}
+                    </div>
 
                     <h2 className="mt-3 font-semibold text-slate-900">
                       {course.title}

@@ -17,6 +17,7 @@ type Course = {
   description: string | null;
   status: string;
   thumbnail_url: string | null;
+  course_categories?: { name: string } | { name: string }[] | null;
 };
 
 type User = {
@@ -47,15 +48,31 @@ export default function AllocationsPage() {
       setLoading(true);
       setError("");
 
-      const { data: courseData, error: courseError } = await supabase
+      // Try including the category join; fall back to a plain query if the
+      // category schema isn't set up yet.
+      let courseData: Course[] | null = null;
+
+      const withCategory = await supabase
         .from("courses")
-        .select("id, title, description, status, thumbnail_url")
+        .select(
+          "id, title, description, status, thumbnail_url, course_categories ( name )"
+        )
         .order("created_at", { ascending: false });
 
-      if (courseError) {
-        setError(courseError.message);
-        setLoading(false);
-        return;
+      if (withCategory.error) {
+        const plain = await supabase
+          .from("courses")
+          .select("id, title, description, status, thumbnail_url")
+          .order("created_at", { ascending: false });
+
+        if (plain.error) {
+          setError(plain.error.message);
+          setLoading(false);
+          return;
+        }
+        courseData = plain.data as Course[];
+      } else {
+        courseData = withCategory.data as Course[];
       }
 
       setCourses(courseData ?? []);
@@ -210,9 +227,21 @@ export default function AllocationsPage() {
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">
-                          {course.title}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-slate-900">
+                            {course.title}
+                          </p>
+                          {(() => {
+                            const cat = Array.isArray(course.course_categories)
+                              ? course.course_categories[0]
+                              : course.course_categories;
+                            return cat?.name ? (
+                              <span className="inline-flex rounded-full bg-pd-red/10 px-2 py-0.5 text-[11px] font-medium text-pd-red">
+                                {cat.name}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
                         {course.description && (
                           <p className="line-clamp-1 max-w-md text-xs text-slate-500">
                             {course.description}

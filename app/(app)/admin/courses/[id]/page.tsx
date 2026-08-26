@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   BookOpen,
-  Plus,
-  Settings,
   FileText,
   Video,
   HelpCircle,
@@ -15,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AddModuleForm } from "@/components/add-module-form";
 import { AddLessonForm } from "@/components/add-lesson-form";
 import { CoursePublishButton } from "@/components/course-publish-button";
+import { EditCourseDetails } from "@/components/edit-course-details";
 
 type CourseEditorPageProps = {
   params: Promise<{
@@ -118,13 +117,12 @@ export default async function CourseEditorPage({
               status={course.status}
             />
 
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              <Settings size={18} />
-              Course Settings
-            </button>
+            <EditCourseDetails
+              courseId={course.id}
+              title={course.title}
+              description={course.description}
+              categoryId={course.category_id ?? null}
+            />
           </div>
         </div>
       </div>

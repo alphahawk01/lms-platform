@@ -197,8 +197,11 @@ export default function PeoplePage() {
 
           <div className="mt-3 h-1 w-12 rounded-full bg-pd-red" />
 
-          <p className="mt-4 text-slate-500">
+          <p className="mt-4 flex items-center gap-2 text-slate-500">
             Manage users and send invitations.
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+              {users.length} total
+            </span>
           </p>
         </div>
 
@@ -323,7 +326,9 @@ export default function PeoplePage() {
       </div>
 
       <p className="mt-3 text-right text-xs text-slate-400">
-        {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
+        {search
+          ? `Showing ${filteredUsers.length} of ${users.length}`
+          : `${users.length} user${users.length !== 1 ? "s" : ""} total`}
       </p>
 
       {/* Invite modal */}
