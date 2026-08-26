@@ -10,7 +10,13 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/dashboard";
+  let next = searchParams.get("next") ?? "/dashboard";
+
+  // Invited users must set a password before landing on the dashboard.
+  // Force them to the set-password screen regardless of the next param.
+  if (type === "invite") {
+    next = "/reset-password";
+  }
 
   if (token_hash && type) {
     const supabase = await createClient();

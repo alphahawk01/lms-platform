@@ -123,9 +123,10 @@ export default async function DashboardPage() {
                 : assignment.courses;
 
               return (
-                <div
+                <a
                   key={assignment.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                  href={course ? `/courses/${course.id}` : "#"}
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="h-32 bg-gradient-to-br from-pd-navy to-pd-navy-surface" />
 
@@ -138,7 +139,7 @@ export default async function DashboardPage() {
                       {course?.description}
                     </p>
                   </div>
-                </div>
+                </a>
               );
             })}
           </div>

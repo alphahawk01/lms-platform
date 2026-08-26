@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [signupComplete, setSignupComplete] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,9 +38,7 @@ export default function LoginPage() {
 
         if (error) throw error;
 
-        setMessage(
-          "Account created successfully. Check your email to confirm your account."
-        );
+        setSignupComplete(true);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -65,6 +64,52 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-pd-navy-deep p-6">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-pd-navy p-8 shadow-2xl shadow-black/40">
+        {signupComplete ? (
+          <div className="text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pd-red/15">
+              <svg
+                className="h-7 w-7 text-pd-red"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+                />
+              </svg>
+            </div>
+
+            <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-white">
+              Check your email
+            </h1>
+
+            <div className="mx-auto mt-3 h-1 w-12 rounded-full bg-pd-red" />
+
+            <p className="mt-4 text-sm text-slate-300">
+              We&apos;ve sent a confirmation link to{" "}
+              <span className="font-semibold text-white">{email}</span>.
+              Click the link in that email to activate your account, then sign
+              in.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSignupComplete(false);
+                setIsSignUp(false);
+                setPassword("");
+                setMessage("");
+              }}
+              className="mt-6 w-full rounded-lg bg-pd-red px-4 py-3 font-semibold text-white transition hover:bg-pd-red-hover"
+            >
+              Back to sign in
+            </button>
+          </div>
+        ) : (
+        <>
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
             PREMIER<span className="text-pd-red">DATA</span>
@@ -174,6 +219,8 @@ export default function LoginPage() {
             {isSignUp ? "Sign in" : "Create one"}
           </button>
         </div>
+        </>
+        )}
       </div>
     </main>
   );

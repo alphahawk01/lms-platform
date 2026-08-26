@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { email, full_name } = body;
+  const { email, full_name, role } = body;
 
   if (!email || typeof email !== "string") {
     return NextResponse.json(
@@ -36,6 +36,13 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  // Validate the role against the allowed set.
+  const allowedRoles = ["learner", "admin", "super_admin"];
+  const assignedRole =
+    typeof role === "string" && allowedRoles.includes(role)
+      ? role
+      : "learner";
 
   const admin = createAdminClient();
 
@@ -45,11 +52,31 @@ export async function POST(request: Request) {
     data: {
       full_name: full_name?.trim() || "",
     },
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://training.premierdata-technology.com"}/auth/confirm?next=/dashboard`,
+    // Invited users have no password yet, so route them to the set-password
+    // screen after the invite token is verified.
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://training.premierdata-technology.com"}/auth/confirm?next=/reset-password`,
   });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Assign the role immediately so access is set from the moment of invite.
+  // Delete-then-insert avoids relying on a unique constraint on user_id.
+  if (data.user) {
+    await admin.from("user_roles").delete().eq("user_id", data.user.id);
+    const { error: roleError } = await admin
+      .from("user_roles")
+      .insert({ user_id: data.user.id, role: assignedRole });
+
+    if (roleError) {
+      // The invite succeeded; surface the role issue but don't fail the whole
+      // request, since the user was created.
+      return NextResponse.json({
+        user: data.user,
+        warning: `User invited, but role could not be set: ${roleError.message}`,
+      });
+    }
   }
 
   return NextResponse.json({ user: data.user });

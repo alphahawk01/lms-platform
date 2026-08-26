@@ -41,6 +41,11 @@ const adminNavigation = [
     icon: BookOpen,
   },
   {
+    name: "Courses",
+    href: "/admin/allocations",
+    icon: GraduationCap,
+  },
+  {
     name: "People",
     href: "/admin/people",
     icon: Users,

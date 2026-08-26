@@ -35,6 +35,7 @@ export default function PeoplePage() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
+  const [inviteRole, setInviteRole] = useState("learner");
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState("");
 
@@ -82,6 +83,7 @@ export default function PeoplePage() {
       body: JSON.stringify({
         email: inviteEmail.trim(),
         full_name: inviteName.trim(),
+        role: inviteRole,
       }),
     });
 
@@ -93,9 +95,10 @@ export default function PeoplePage() {
       return;
     }
 
-    setInviteMessage("Invitation sent successfully.");
+    setInviteMessage(data.warning || "Invitation sent successfully.");
     setInviteEmail("");
     setInviteName("");
+    setInviteRole("learner");
     setInviting(false);
 
     // Refresh the user list
@@ -369,6 +372,24 @@ export default function PeoplePage() {
                   className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-pd-red"
                   placeholder="Their full name"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">
+                  Role
+                </label>
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-pd-red"
+                >
+                  <option value="learner">Learner</option>
+                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+                <p className="mt-1 text-xs text-slate-400">
+                  Sets the user&apos;s access level immediately.
+                </p>
               </div>
 
               {inviteMessage && (

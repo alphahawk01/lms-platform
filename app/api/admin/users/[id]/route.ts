@@ -56,13 +56,13 @@ export async function PATCH(
 
   // Update role if provided
   if (role !== undefined) {
-    // Upsert into user_roles
+    // Delete existing role(s) for this user, then insert the new one.
+    // This avoids needing a unique constraint on user_id.
+    await admin.from("user_roles").delete().eq("user_id", id);
+
     const { error: roleError } = await admin
       .from("user_roles")
-      .upsert(
-        { user_id: id, role },
-        { onConflict: "user_id" }
-      );
+      .insert({ user_id: id, role });
 
     if (roleError) {
       return NextResponse.json(
