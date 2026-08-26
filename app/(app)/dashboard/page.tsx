@@ -40,6 +40,11 @@ export default async function DashboardPage() {
       (assignment) => assignment.status === "in_progress"
     ).length ?? 0;
 
+  const completionRate =
+    totalCourses > 0
+      ? Math.round((completedCourses / totalCourses) * 100)
+      : 0;
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-8">
@@ -75,14 +80,9 @@ export default async function DashboardPage() {
 
         <DashboardStat
           title="Completion Rate"
-          value={
-            totalCourses > 0
-              ? `${Math.round(
-                  (completedCourses / totalCourses) * 100
-                )}%`
-              : "0%"
-          }
+          value={`${completionRate}%`}
           icon={<TrendingUp size={22} />}
+          highlight={completionRate === 100}
         />
       </div>
 
@@ -153,10 +153,12 @@ function DashboardStat({
   title,
   value,
   icon,
+  highlight = false,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
+  highlight?: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -166,12 +168,22 @@ function DashboardStat({
             {title}
           </p>
 
-          <p className="mt-2 text-3xl font-bold text-slate-900">
+          <p
+            className={`mt-2 text-3xl font-bold ${
+              highlight ? "text-green-600" : "text-slate-900"
+            }`}
+          >
             {value}
           </p>
         </div>
 
-        <div className="rounded-xl bg-pd-red/10 p-3 text-pd-red">
+        <div
+          className={`rounded-xl p-3 ${
+            highlight
+              ? "bg-green-100 text-green-600"
+              : "bg-pd-red/10 text-pd-red"
+          }`}
+        >
           {icon}
         </div>
       </div>

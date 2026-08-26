@@ -29,13 +29,33 @@ export default async function CourseViewerPage({
     notFound();
   }
 
-  // Confirm the user is assigned to this course
-  const { data: assignment } = await supabase
+  // Confirm the user is assigned to this course.
+  // Try selecting progress; if the column doesn't exist yet, fall back.
+  let assignment: {
+    id: string;
+    status: string | null;
+    progress?: unknown;
+  } | null = null;
+
+  const withProgress = await supabase
     .from("course_assignments")
-    .select("id, status")
+    .select("id, status, progress")
     .eq("course_id", id)
     .eq("user_id", user?.id ?? "")
     .maybeSingle();
+
+  if (withProgress.error) {
+    // progress column may not exist yet — retry without it
+    const basic = await supabase
+      .from("course_assignments")
+      .select("id, status")
+      .eq("course_id", id)
+      .eq("user_id", user?.id ?? "")
+      .maybeSingle();
+    assignment = basic.data;
+  } else {
+    assignment = withProgress.data;
+  }
 
   // Only allow viewing published courses that are assigned to the user
   if (course.status !== "published" || !assignment) {
@@ -105,11 +125,19 @@ export default async function CourseViewerPage({
           .order("position", { ascending: true })
       : { data: [] };
 
+  // progress shape: { lesson_id?: string, page_index?: number, completed_lessons?: string[] }
+  const progress =
+    (assignment as { progress?: unknown }).progress &&
+    typeof (assignment as { progress?: unknown }).progress === "object"
+      ? ((assignment as { progress?: Record<string, unknown> }).progress ?? {})
+      : {};
+
   return (
     <CourseViewer
       course={course}
       assignmentId={assignment.id}
       assignmentStatus={assignment.status ?? "not_started"}
+      savedProgress={progress}
       modules={modules ?? []}
       lessons={lessons ?? []}
       pages={pages ?? []}
