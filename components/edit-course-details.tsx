@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Pencil, X } from "lucide-react";
+import { Loader2, Pencil, X, Check } from "lucide-react";
 
 type Category = { id: string; name: string };
 
@@ -11,14 +11,12 @@ type EditCourseDetailsProps = {
   courseId: string;
   title: string;
   description: string | null;
-  categoryId: string | null;
 };
 
 export function EditCourseDetails({
   courseId,
   title,
   description,
-  categoryId,
 }: EditCourseDetailsProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -26,21 +24,21 @@ export function EditCourseDetails({
   const [open, setOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
   const [editDescription, setEditDescription] = useState(description ?? "");
-  const [editCategoryId, setEditCategoryId] = useState(categoryId ?? "");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const [categoriesAvailable, setCategoriesAvailable] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    // Reset fields to current values each time it opens
     setEditTitle(title);
     setEditDescription(description ?? "");
-    setEditCategoryId(categoryId ?? "");
     setError("");
 
-    // Load categories (if the feature is set up)
+    // Load all categories
     fetch("/api/admin/categories")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -50,7 +48,26 @@ export function EditCourseDetails({
         }
       })
       .catch(() => {});
-  }, [open, title, description, categoryId]);
+
+    // Load this course's current category links
+    fetch(`/api/admin/course-categories?course_id=${courseId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.category_ids) {
+          setSelectedCategories(new Set(data.category_ids));
+        }
+      })
+      .catch(() => {});
+  }, [open, title, description, courseId]);
+
+  function toggleCategory(id: string) {
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function handleSave() {
     if (!editTitle.trim()) {
@@ -61,28 +78,30 @@ export function EditCourseDetails({
     setSaving(true);
     setError("");
 
-    const baseUpdate = {
-      title: editTitle.trim(),
-      description: editDescription.trim() || null,
-    };
-
-    // Try updating with category; fall back if the column isn't set up.
-    let result = await supabase
+    const { error: updErr } = await supabase
       .from("courses")
-      .update({ ...baseUpdate, category_id: editCategoryId || null })
+      .update({
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+      })
       .eq("id", courseId);
 
-    if (result.error && /category_id/.test(result.error.message)) {
-      result = await supabase
-        .from("courses")
-        .update(baseUpdate)
-        .eq("id", courseId);
-    }
-
-    if (result.error) {
-      setError(result.error.message);
+    if (updErr) {
+      setError(updErr.message);
       setSaving(false);
       return;
+    }
+
+    // Replace category links
+    if (categoriesAvailable) {
+      await fetch("/api/admin/course-categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          course_id: courseId,
+          category_ids: Array.from(selectedCategories),
+        }),
+      });
     }
 
     setSaving(false);
@@ -132,20 +151,28 @@ export function EditCourseDetails({
               {categoriesAvailable && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    Category
+                    Categories
                   </label>
-                  <select
-                    value={editCategoryId}
-                    onChange={(e) => setEditCategoryId(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-pd-red"
-                  >
-                    <option value="">No category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {categories.map((c) => {
+                      const selected = selectedCategories.has(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleCategory(c.id)}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                            selected
+                              ? "border-pd-red bg-pd-red/10 text-pd-red"
+                              : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {selected && <Check size={14} />}
+                          {c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

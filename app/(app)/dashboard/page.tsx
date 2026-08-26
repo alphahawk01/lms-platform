@@ -6,6 +6,21 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+// Pulls category names out of a course's nested course_category_links,
+// normalizing the object-or-array shape Supabase may return.
+function extractCategoryNames(course: unknown): string[] {
+  const links = (course as { course_category_links?: unknown })
+    ?.course_category_links;
+  if (!Array.isArray(links)) return [];
+  return links
+    .map((link) => {
+      const cc = (link as { course_categories?: unknown }).course_categories;
+      if (Array.isArray(cc)) return (cc[0] as { name?: string })?.name;
+      return (cc as { name?: string } | null)?.name;
+    })
+    .filter((n): n is string => Boolean(n));
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -23,7 +38,10 @@ export default async function DashboardPage() {
         id,
         title,
         description,
-        thumbnail_url
+        thumbnail_url,
+        course_category_links (
+          course_categories ( name )
+        )
       )
     `)
     .eq("user_id", user?.id ?? "");
@@ -122,6 +140,8 @@ export default async function DashboardPage() {
                 ? assignment.courses[0]
                 : assignment.courses;
 
+              const categoryNames = extractCategoryNames(course);
+
               return (
                 <a
                   key={assignment.id}
@@ -131,6 +151,19 @@ export default async function DashboardPage() {
                   <div className="h-32 bg-gradient-to-br from-pd-navy to-pd-navy-surface" />
 
                   <div className="p-5">
+                    {categoryNames.length > 0 && (
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        {categoryNames.map((name) => (
+                          <span
+                            key={name}
+                            className="inline-flex rounded-full bg-pd-red/10 px-2 py-0.5 text-[11px] font-medium text-pd-red"
+                          >
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     <h3 className="font-semibold text-slate-900">
                       {course?.title}
                     </h3>

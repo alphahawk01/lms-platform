@@ -17,7 +17,9 @@ type Course = {
   description: string | null;
   status: string;
   thumbnail_url: string | null;
-  course_categories?: { name: string } | { name: string }[] | null;
+  course_category_links?: {
+    course_categories: { name: string } | { name: string }[] | null;
+  }[];
 };
 
 type User = {
@@ -55,7 +57,7 @@ export default function AllocationsPage() {
       const withCategory = await supabase
         .from("courses")
         .select(
-          "id, title, description, status, thumbnail_url, course_categories ( name )"
+          "id, title, description, status, thumbnail_url, course_category_links ( course_categories ( name ) )"
         )
         .order("created_at", { ascending: false });
 
@@ -72,7 +74,7 @@ export default function AllocationsPage() {
         }
         courseData = plain.data as Course[];
       } else {
-        courseData = withCategory.data as Course[];
+        courseData = withCategory.data as unknown as Course[];
       }
 
       setCourses(courseData ?? []);
@@ -227,20 +229,26 @@ export default function AllocationsPage() {
                         )}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium text-slate-900">
                             {course.title}
                           </p>
-                          {(() => {
-                            const cat = Array.isArray(course.course_categories)
-                              ? course.course_categories[0]
-                              : course.course_categories;
-                            return cat?.name ? (
-                              <span className="inline-flex rounded-full bg-pd-red/10 px-2 py-0.5 text-[11px] font-medium text-pd-red">
-                                {cat.name}
+                          {course.course_category_links
+                            ?.map((link) => {
+                              const cc = link.course_categories;
+                              return Array.isArray(cc)
+                                ? cc[0]?.name
+                                : cc?.name;
+                            })
+                            .filter(Boolean)
+                            .map((name) => (
+                              <span
+                                key={name}
+                                className="inline-flex rounded-full bg-pd-red/10 px-2 py-0.5 text-[11px] font-medium text-pd-red"
+                              >
+                                {name}
                               </span>
-                            ) : null;
-                          })()}
+                            ))}
                         </div>
                         {course.description && (
                           <p className="line-clamp-1 max-w-md text-xs text-slate-500">

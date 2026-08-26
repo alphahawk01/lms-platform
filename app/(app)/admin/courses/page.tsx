@@ -11,14 +11,16 @@ export default async function CourseBuilderPage() {
     status: string;
     thumbnail_url: string | null;
     description: string | null;
-    course_categories?: { name: string } | null;
+    course_category_links?: {
+      course_categories: { name: string } | { name: string }[] | null;
+    }[];
   };
 
-  // Try to include the category via the FK join; if the category schema
+  // Try to include categories via the join table; if the category schema
   // isn't set up yet, fall back to a plain course query so the list still works.
   const withCategory = await supabase
     .from("courses")
-    .select("*, course_categories ( name )")
+    .select("*, course_category_links ( course_categories ( name ) )")
     .order("created_at", { ascending: false });
 
   const plain = withCategory.error
@@ -102,11 +104,20 @@ export default async function CourseBuilderPage() {
                           : "Draft"}
                       </span>
 
-                      {course.course_categories?.name && (
-                        <span className="inline-flex rounded-full bg-pd-red/10 px-2.5 py-1 text-xs font-medium text-pd-red">
-                          {course.course_categories.name}
-                        </span>
-                      )}
+                      {course.course_category_links
+                        ?.map((link) => {
+                          const cc = link.course_categories;
+                          return Array.isArray(cc) ? cc[0]?.name : cc?.name;
+                        })
+                        .filter(Boolean)
+                        .map((name) => (
+                          <span
+                            key={name}
+                            className="inline-flex rounded-full bg-pd-red/10 px-2.5 py-1 text-xs font-medium text-pd-red"
+                          >
+                            {name}
+                          </span>
+                        ))}
                     </div>
 
                     <h2 className="mt-3 font-semibold text-slate-900">

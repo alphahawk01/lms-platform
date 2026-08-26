@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X, Check } from "lucide-react";
 
 type Category = { id: string; name: string };
 
@@ -13,7 +13,9 @@ export function CreateCourseForm() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -35,6 +37,15 @@ export function CreateCourseForm() {
     }
   }
 
+  function toggleCategory(id: string) {
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   async function handleCreateCategory() {
     if (!newCategory.trim()) return;
     setCreatingCategory(true);
@@ -53,12 +64,12 @@ export function CreateCourseForm() {
       return;
     }
 
-    // Add to list, select it, and reset the inline form
     setCategories((prev) => {
       const exists = prev.some((c) => c.id === data.category.id);
       return exists ? prev : [...prev, data.category];
     });
-    setCategoryId(data.category.id);
+    // Auto-select the newly created category
+    setSelectedCategories((prev) => new Set(prev).add(data.category.id));
     setNewCategory("");
     setAddingCategory(false);
   }
@@ -84,35 +95,33 @@ export function CreateCourseForm() {
       return;
     }
 
-    const baseInsert = {
-      title: title.trim(),
-      description: description.trim() || null,
-      status: "draft",
-      created_by: user.id,
-    };
-
-    // Try inserting with category_id; if the column doesn't exist yet,
-    // fall back to creating the course without it.
-    let created = await supabase
+    const { data, error } = await supabase
       .from("courses")
-      .insert({ ...baseInsert, category_id: categoryId || null })
+      .insert({
+        title: title.trim(),
+        description: description.trim() || null,
+        status: "draft",
+        created_by: user.id,
+      })
       .select()
       .single();
-
-    if (created.error && /category_id/.test(created.error.message)) {
-      created = await supabase
-        .from("courses")
-        .insert(baseInsert)
-        .select()
-        .single();
-    }
-
-    const { data, error } = created;
 
     if (error) {
       setError(error.message);
       setSaving(false);
       return;
+    }
+
+    // Save category links (if any selected)
+    if (selectedCategories.size > 0) {
+      await fetch("/api/admin/course-categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          course_id: data.id,
+          category_ids: Array.from(selectedCategories),
+        }),
+      });
     }
 
     router.push(`/admin/courses/${data.id}`);
@@ -141,11 +150,8 @@ export function CreateCourseForm() {
 
       <div>
         <div className="flex items-center justify-between">
-          <label
-            htmlFor="category"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Category
+          <label className="block text-sm font-medium text-slate-700">
+            Categories
           </label>
 
           {!addingCategory && (
@@ -160,14 +166,14 @@ export function CreateCourseForm() {
           )}
         </div>
 
-        {addingCategory ? (
+        {addingCategory && (
           <div className="mt-2 flex gap-2">
             <input
               type="text"
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               placeholder="e.g. Aussie Rules"
-              className="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-pd-red"
+              className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 outline-none transition focus:border-pd-red"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -198,21 +204,35 @@ export function CreateCourseForm() {
               <X size={16} />
             </button>
           </div>
-        ) : (
-          <select
-            id="category"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-pd-red"
-          >
-            <option value="">No category</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
         )}
+
+        {/* Multi-select chips */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {categories.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              No categories yet. Create one above.
+            </p>
+          ) : (
+            categories.map((c) => {
+              const selected = selectedCategories.has(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => toggleCategory(c.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                    selected
+                      ? "border-pd-red bg-pd-red/10 text-pd-red"
+                      : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {selected && <Check size={14} />}
+                  {c.name}
+                </button>
+              );
+            })
+          )}
+        </div>
       </div>
 
       <div>

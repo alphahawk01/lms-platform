@@ -47,6 +47,21 @@ export default async function CourseEditorPage({
     notFound();
   }
 
+  // Load this course's categories (via the join table). Falls back to empty
+  // if the category schema isn't set up yet.
+  const { data: categoryLinks } = await supabase
+    .from("course_category_links")
+    .select("course_categories ( name )")
+    .eq("course_id", id);
+
+  const courseCategories: string[] = (categoryLinks ?? [])
+    .map((link) => {
+      const cc = (link as { course_categories: unknown }).course_categories;
+      if (Array.isArray(cc)) return (cc[0] as { name?: string })?.name;
+      return (cc as { name?: string } | null)?.name;
+    })
+    .filter((n): n is string => Boolean(n));
+
   // Get modules
   const { data: modules, error: modulesError } = await supabase
     .from("modules")
@@ -87,18 +102,28 @@ export default async function CourseEditorPage({
 
       {/* Course Header */}
       <div className="rounded-2xl border border-slate-200 bg-white p-8">
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-medium ${course.status === "published"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-slate-100 text-slate-600"
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  course.status === "published"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-slate-100 text-slate-600"
                 }`}
-            >
-              {course.status === "published"
-                ? "Published"
-                : "Draft"}
-            </span>
+              >
+                {course.status === "published" ? "Published" : "Draft"}
+              </span>
+
+              {courseCategories.map((name) => (
+                <span
+                  key={name}
+                  className="rounded-full bg-pd-red/10 px-3 py-1 text-xs font-medium text-pd-red"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
 
             <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
               {course.title}
@@ -111,7 +136,7 @@ export default async function CourseEditorPage({
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <CoursePublishButton
               courseId={course.id}
               status={course.status}
@@ -121,7 +146,6 @@ export default async function CourseEditorPage({
               courseId={course.id}
               title={course.title}
               description={course.description}
-              categoryId={course.category_id ?? null}
             />
           </div>
         </div>

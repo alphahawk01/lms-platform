@@ -7,7 +7,22 @@ type CourseInfo = {
   title: string;
   description: string | null;
   thumbnail_url: string | null;
+  course_category_links?: {
+    course_categories: { name: string } | { name: string }[] | null;
+  }[];
 };
+
+function extractCategoryNames(course: CourseInfo | null): string[] {
+  const links = course?.course_category_links;
+  if (!Array.isArray(links)) return [];
+  return links
+    .map((link) => {
+      const cc = link.course_categories;
+      if (Array.isArray(cc)) return cc[0]?.name;
+      return cc?.name;
+    })
+    .filter((n): n is string => Boolean(n));
+}
 
 type Assignment = {
   id: string;
@@ -46,7 +61,10 @@ export default async function CoursesPage() {
         id,
         title,
         description,
-        thumbnail_url
+        thumbnail_url,
+        course_category_links (
+          course_categories ( name )
+        )
       )
     `
     )
@@ -111,13 +129,24 @@ export default async function CoursesPage() {
                 </div>
 
                 <div className="p-5">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                      statusStyles[status] ?? statusStyles.not_started
-                    }`}
-                  >
-                    {statusLabels[status] ?? "Not Started"}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                        statusStyles[status] ?? statusStyles.not_started
+                      }`}
+                    >
+                      {statusLabels[status] ?? "Not Started"}
+                    </span>
+
+                    {extractCategoryNames(course).map((name) => (
+                      <span
+                        key={name}
+                        className="inline-flex rounded-full bg-pd-red/10 px-2.5 py-1 text-xs font-medium text-pd-red"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
 
                   <h2 className="mt-3 font-semibold text-slate-900">
                     {course.title}
