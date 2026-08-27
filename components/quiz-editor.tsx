@@ -6,12 +6,11 @@ import {
   Trash2,
   Check,
   Loader2,
-  Image as ImageIcon,
-  Video,
   Settings,
-  GripVertical,
   X,
 } from "lucide-react";
+import { ImageUpload } from "@/components/image-upload";
+import { VideoUpload } from "@/components/video-upload";
 
 type Option = {
   id?: string;
@@ -441,43 +440,47 @@ function QuestionForm({
           </div>
         </div>
 
-        {/* Media URL (image/video) */}
+        {/* Media upload (image/video) */}
         <div>
           <label className="mb-1.5 block text-xs font-medium text-slate-500">
             Media (optional)
           </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={q.media_url ?? ""}
-              onChange={(e) =>
-                setQ({ ...q, media_url: e.target.value || null })
-              }
-              placeholder="Paste an image or video URL"
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-pd-red"
-            />
-            <select
-              value={q.media_type ?? "image"}
-              onChange={(e) => setQ({ ...q, media_type: e.target.value })}
-              className="rounded-lg border border-slate-300 px-2 py-2 text-sm text-slate-700 outline-none"
+
+          <div className="mb-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setQ({ ...q, media_type: "image" })}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                (q.media_type ?? "image") === "image"
+                  ? "bg-pd-red/10 text-pd-red"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
             >
-              <option value="image">Image</option>
-              <option value="video">Video</option>
-            </select>
+              Image
+            </button>
+            <button
+              type="button"
+              onClick={() => setQ({ ...q, media_type: "video" })}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                q.media_type === "video"
+                  ? "bg-pd-red/10 text-pd-red"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Video
+            </button>
           </div>
 
-          {q.media_url && q.media_type === "image" && (
-            <img
-              src={q.media_url}
-              alt=""
-              className="mt-3 max-h-40 rounded-xl object-cover"
+          {(q.media_type ?? "image") === "image" ? (
+            <ImageUpload
+              value={q.media_url ?? ""}
+              onChange={(url) => setQ({ ...q, media_url: url || null, media_type: "image" })}
+              lessonId={q.lesson_id}
             />
-          )}
-          {q.media_url && q.media_type === "video" && (
-            <video
-              src={q.media_url}
-              className="mt-3 max-h-40 rounded-xl"
-              controls
+          ) : (
+            <VideoUpload
+              value={q.media_url ?? ""}
+              onChange={(url) => setQ({ ...q, media_url: url || null, media_type: "video" })}
             />
           )}
         </div>
