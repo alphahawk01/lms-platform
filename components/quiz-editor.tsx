@@ -39,6 +39,10 @@ type QuizConfig = {
   time_limit_seconds: number | null;
   randomize: boolean;
   max_attempts: number | null;
+  intro_title: string | null;
+  intro_message: string | null;
+  end_title: string | null;
+  end_message: string | null;
 };
 
 type QuizEditorProps = {
@@ -256,6 +260,60 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
         {config && (
           <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-5">
+              {/* Intro slide */}
+              <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Intro Slide
+                </p>
+                <input
+                  type="text"
+                  value={config.intro_title ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, intro_title: e.target.value || null })
+                  }
+                  onBlur={() => saveConfig({ intro_title: config.intro_title })}
+                  placeholder="Title (e.g. Welcome to the Quiz)"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-pd-red"
+                />
+                <textarea
+                  value={config.intro_message ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, intro_message: e.target.value || null })
+                  }
+                  onBlur={() => saveConfig({ intro_message: config.intro_message })}
+                  rows={2}
+                  placeholder="Message shown before the quiz starts..."
+                  className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-pd-red"
+                />
+              </div>
+
+              {/* End slide */}
+              <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  End Slide
+                </p>
+                <input
+                  type="text"
+                  value={config.end_title ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, end_title: e.target.value || null })
+                  }
+                  onBlur={() => saveConfig({ end_title: config.end_title })}
+                  placeholder="Title (e.g. Quiz Complete!)"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-pd-red"
+                />
+                <textarea
+                  value={config.end_message ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, end_message: e.target.value || null })
+                  }
+                  onBlur={() => saveConfig({ end_message: config.end_message })}
+                  rows={2}
+                  placeholder="Message shown after the quiz ends..."
+                  className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-pd-red"
+                />
+              </div>
+
               <div>
                 <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-500">
                   Pass mark (%)
@@ -598,7 +656,7 @@ function QuestionForm({
             value={q.explanation ?? ""}
             onChange={(e) => setQ({ ...q, explanation: e.target.value || null })}
             rows={3}
-            placeholder="e.g. That's correct! Contact your supervisor immediately and they will be able to log you out..."
+            placeholder="e.g. Enter message for feedback on the correct answer..."
             className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-pd-red"
           />
           <p className="mt-1 text-[11px] text-slate-400">

@@ -76,8 +76,17 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json();
-  const { lesson_id, pass_mark, time_limit_seconds, randomize, max_attempts } =
-    body;
+  const {
+    lesson_id,
+    pass_mark,
+    time_limit_seconds,
+    randomize,
+    max_attempts,
+    intro_title,
+    intro_message,
+    end_title,
+    end_message,
+  } = body;
 
   if (!lesson_id) {
     return NextResponse.json(
@@ -98,6 +107,10 @@ export async function PUT(request: Request) {
         time_limit_seconds: time_limit_seconds || null,
         randomize: randomize ?? true,
         max_attempts: max_attempts || null,
+        intro_title: intro_title || null,
+        intro_message: intro_message || null,
+        end_title: end_title || null,
+        end_message: end_message || null,
       },
       { onConflict: "lesson_id" }
     )
