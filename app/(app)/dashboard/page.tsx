@@ -115,27 +115,39 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {!assignments || assignments.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pd-red/10">
-              <BookOpen
-                size={28}
-                className="text-pd-red"
-              />
-            </div>
+        {(() => {
+          const activeCourses = (assignments ?? []).filter(
+            (a) => a.status !== "completed"
+          );
 
-            <h3 className="mt-5 font-semibold text-slate-900">
-              No training assigned yet
-            </h3>
+          if (activeCourses.length === 0) {
+            return (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pd-red/10">
+                  <BookOpen
+                    size={28}
+                    className="text-pd-red"
+                  />
+                </div>
 
-            <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-              When training courses are assigned to you, they
-              will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {assignments.map((assignment) => {
+                <h3 className="mt-5 font-semibold text-slate-900">
+                  {(assignments?.length ?? 0) > 0
+                    ? "All caught up!"
+                    : "No training assigned yet"}
+                </h3>
+
+                <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                  {(assignments?.length ?? 0) > 0
+                    ? "You've completed all your assigned training."
+                    : "When training courses are assigned to you, they will appear here."}
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {activeCourses.map((assignment) => {
               const course = Array.isArray(assignment.courses)
                 ? assignment.courses[0]
                 : assignment.courses;
@@ -185,7 +197,8 @@ export default async function DashboardPage() {
               );
             })}
           </div>
-        )}
+          );
+        })()}
       </section>
     </div>
   );
