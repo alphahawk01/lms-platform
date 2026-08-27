@@ -10,6 +10,7 @@ import {
 
 import { createClient } from "@/lib/supabase/server";
 import { LessonEditorForm } from "@/components/lesson-editor-form";
+import { QuizEditor } from "@/components/quiz-editor";
 
 type LessonEditorPageProps = {
   params: Promise<{
@@ -100,19 +101,23 @@ export default async function LessonEditorPage({
         </h1>
       </div>
 
-      <LessonEditorForm
-        lesson={{
-          id: lesson.id,
-          title: lesson.title,
-          lesson_type: lesson.lesson_type,
-          content: lesson.content,
-          video_url: lesson.video_url,
-          image_url: lesson.image_url,
-        }}
-        initialPages={pages || []}
-        initialBlocks={blocks || []}
-        courseId={id}
-      />
+      {lesson.lesson_type === "quiz" ? (
+        <QuizEditor lessonId={lesson.id} lessonTitle={lesson.title} />
+      ) : (
+        <LessonEditorForm
+          lesson={{
+            id: lesson.id,
+            title: lesson.title,
+            lesson_type: lesson.lesson_type,
+            content: lesson.content,
+            video_url: lesson.video_url,
+            image_url: lesson.image_url,
+          }}
+          initialPages={pages || []}
+          initialBlocks={blocks || []}
+          courseId={id}
+        />
+      )}
     </div>
   );
 }
