@@ -372,9 +372,13 @@ export function CourseViewer({
                     next.add(activeLesson.id);
                     return next;
                   });
-                  // Auto-advance to next lesson if not the last
+
                   if (!isLastLesson) {
+                    // Advance to next lesson
                     goToLesson(currentLessonIndex + 1);
+                  } else {
+                    // Last lesson — mark course complete and go to dashboard
+                    markComplete();
                   }
                 }
               }}
