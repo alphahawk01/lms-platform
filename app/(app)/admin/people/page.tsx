@@ -656,6 +656,27 @@ export default function PeoplePage() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Select CSV file
                 </label>
+
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const csv = "email,full_name,role\njohn@example.com,John Smith,learner\njane@example.com,Jane Doe,admin\n";
+                      const blob = new Blob([csv], { type: "text/csv" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "user_import_template.csv";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-pd-red hover:text-pd-red-hover"
+                  >
+                    <Upload size={15} />
+                    Download CSV template
+                  </button>
+                </div>
+
                 <input
                   type="file"
                   accept=".csv"
