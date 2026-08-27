@@ -10,6 +10,7 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  Route,
 } from "lucide-react";
 
 type AppSidebarProps = {
@@ -39,6 +40,11 @@ const adminNavigation = [
     name: "Courses",
     href: "/admin/allocations",
     icon: GraduationCap,
+  },
+  {
+    name: "Learning Paths",
+    href: "/admin/learning-paths",
+    icon: Route,
   },
   {
     name: "People",

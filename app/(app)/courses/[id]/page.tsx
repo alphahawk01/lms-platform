@@ -85,6 +85,58 @@ export default async function CourseViewerPage({
     );
   }
 
+  // Check if this course is in a learning path and if the prerequisite is met
+  const { data: pathCourseEntry } = await supabase
+    .from("learning_path_courses")
+    .select("path_id, position")
+    .eq("course_id", id)
+    .maybeSingle();
+
+  if (pathCourseEntry && pathCourseEntry.position > 0) {
+    // Find the previous course in this path
+    const { data: prevPathCourse } = await supabase
+      .from("learning_path_courses")
+      .select("course_id")
+      .eq("path_id", pathCourseEntry.path_id)
+      .eq("position", pathCourseEntry.position - 1)
+      .maybeSingle();
+
+    if (prevPathCourse) {
+      // Check if the user has completed the previous course
+      const { data: prevAssignment } = await supabase
+        .from("course_assignments")
+        .select("status")
+        .eq("course_id", prevPathCourse.course_id)
+        .eq("user_id", user?.id ?? "")
+        .maybeSingle();
+
+      if (prevAssignment?.status !== "completed") {
+        return (
+          <div className="mx-auto max-w-3xl">
+            <Link
+              href="/courses"
+              className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-900"
+            >
+              <ArrowLeft size={18} />
+              Back to My Courses
+            </Link>
+
+            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center">
+              <h1 className="text-lg font-semibold text-slate-900">
+                Course locked
+              </h1>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                You need to complete the previous course in your learning path
+                before accessing this one. Return to My Courses to continue
+                in order.
+              </p>
+            </div>
+          </div>
+        );
+      }
+    }
+  }
+
   // Load the full course tree
   const { data: modules } = await supabase
     .from("modules")

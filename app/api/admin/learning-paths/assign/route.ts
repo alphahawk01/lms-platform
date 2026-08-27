@@ -1,0 +1,100 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+// POST /api/admin/learning-paths/assign
+// Assigns a learning path to one or more users.
+// Also auto-creates course_assignments for each course in the path.
+export async function POST(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+
+  const isAdmin =
+    roles?.some((r) => r.role === "admin" || r.role === "super_admin") ?? false;
+
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await request.json();
+  const { path_id, user_ids } = body as {
+    path_id?: string;
+    user_ids?: string[];
+  };
+
+  if (!path_id || !Array.isArray(user_ids) || user_ids.length === 0) {
+    return NextResponse.json(
+      { error: "path_id and at least one user_id are required" },
+      { status: 400 }
+    );
+  }
+
+  const admin = createAdminClient();
+
+  // Get courses in this path (ordered)
+  const { data: pathCourses } = await admin
+    .from("learning_path_courses")
+    .select("course_id, position")
+    .eq("path_id", path_id)
+    .order("position", { ascending: true });
+
+  const courseIds = (pathCourses ?? []).map((pc) => pc.course_id);
+
+  let assignedPaths = 0;
+  let assignedCourses = 0;
+
+  for (const userId of user_ids) {
+    // Check if already assigned this path
+    const { data: existing } = await admin
+      .from("learning_path_assignments")
+      .select("id")
+      .eq("path_id", path_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!existing) {
+      // Create path assignment
+      await admin.from("learning_path_assignments").insert({
+        path_id,
+        user_id: userId,
+      });
+      assignedPaths++;
+    }
+
+    // Create course assignments for each course in the path (skip existing)
+    for (const courseId of courseIds) {
+      const { data: existingCourse } = await admin
+        .from("course_assignments")
+        .select("id")
+        .eq("course_id", courseId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!existingCourse) {
+        await admin.from("course_assignments").insert({
+          course_id: courseId,
+          user_id: userId,
+          status: "not_started",
+        });
+        assignedCourses++;
+      }
+    }
+  }
+
+  return NextResponse.json({
+    assigned_paths: assignedPaths,
+    assigned_courses: assignedCourses,
+    skipped: user_ids.length - assignedPaths,
+  });
+}
