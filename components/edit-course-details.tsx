@@ -106,6 +106,14 @@ export function EditCourseDetails({
 
     setSaving(false);
     setOpen(false);
+
+    // Unpublish course on edit
+    fetch("/api/admin/unpublish-on-edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ course_id: courseId }),
+    });
+
     router.refresh();
   }
 

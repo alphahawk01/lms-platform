@@ -90,6 +90,12 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
     if (res.ok) {
       const data = await res.json();
       setConfig(data.config);
+      // Unpublish course on edit
+      fetch("/api/admin/unpublish-on-edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lesson_id: lessonId }),
+      });
     }
   }
 
@@ -149,6 +155,12 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
         );
         setSavedNotice(true);
         setTimeout(() => setSavedNotice(false), 2000);
+        // Unpublish course on edit
+        fetch("/api/admin/unpublish-on-edit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lesson_id: lessonId }),
+        });
       } else {
         const data = await res.json();
         setError(data.error || "Failed to save question");

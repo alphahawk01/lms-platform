@@ -102,6 +102,14 @@ export function AddLessonForm({
 
     closeModal();
     setIsSaving(false);
+
+    // Unpublish course on edit
+    fetch("/api/admin/unpublish-on-edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ module_id: moduleId }),
+    });
+
     router.refresh();
   }
 
