@@ -181,7 +181,7 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
   }
 
   return (
-    <div className="grid h-[calc(100vh-16rem)] grid-cols-[260px_1fr_300px] gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <div className="grid grid-cols-[260px_1fr_300px] gap-0 rounded-2xl border border-slate-200 bg-white" style={{ height: "700px" }}>
       {/* Left: Question list */}
       <div className="flex flex-col border-r border-slate-200 bg-slate-50">
         <div className="border-b border-slate-200 px-4 py-3">
