@@ -127,6 +127,7 @@ export async function POST(request: Request) {
     media_url,
     media_type,
     points,
+    explanation,
     options,
   } = body;
 
@@ -152,6 +153,7 @@ export async function POST(request: Request) {
         media_type: media_type || null,
         points: points ?? 1,
         position: position ?? 0,
+        explanation: explanation || null,
       })
       .eq("id", id);
 
@@ -170,6 +172,7 @@ export async function POST(request: Request) {
         media_type: media_type || null,
         points: points ?? 1,
         position: position ?? 0,
+        explanation: explanation || null,
       })
       .select()
       .single();

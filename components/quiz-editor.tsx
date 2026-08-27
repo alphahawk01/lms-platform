@@ -28,6 +28,7 @@ type Question = {
   media_url: string | null;
   media_type: string | null;
   points: number;
+  explanation: string | null;
   quiz_options: Option[];
 };
 
@@ -53,6 +54,7 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
   const [saving, setSaving] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState("");
+  const [savedNotice, setSavedNotice] = useState(false);
 
   // Load quiz data
   useEffect(() => {
@@ -129,6 +131,7 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
           media_url: question.media_url,
           media_type: question.media_type,
           points: question.points,
+          explanation: question.explanation,
           options: question.quiz_options.map((o) => ({
             content: o.content,
             is_correct: o.is_correct,
@@ -140,6 +143,8 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
         setQuestions((prev) =>
           prev.map((q) => (q.id === data.question.id ? data.question : q))
         );
+        setSavedNotice(true);
+        setTimeout(() => setSavedNotice(false), 2000);
       } else {
         const data = await res.json();
         setError(data.error || "Failed to save question");
@@ -357,6 +362,14 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
           </div>
         )}
       </div>
+
+      {/* Save confirmation toast */}
+      {savedNotice && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
+          <Check size={16} />
+          Question saved
+        </div>
+      )}
     </div>
   );
 }
@@ -574,6 +587,25 @@ function QuestionForm({
             Short answers are manually graded or matched exactly.
           </div>
         )}
+
+        {/* Explanation / feedback shown to learner after answering */}
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-slate-500">
+            Feedback message{" "}
+            <span className="text-slate-400">(shown after user answers)</span>
+          </label>
+          <textarea
+            value={q.explanation ?? ""}
+            onChange={(e) => setQ({ ...q, explanation: e.target.value || null })}
+            rows={3}
+            placeholder="e.g. That's correct! Contact your supervisor immediately and they will be able to log you out..."
+            className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-pd-red"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">
+            Custom message displayed to the learner after they submit their
+            answer to this question.
+          </p>
+        </div>
       </div>
 
       {/* Bottom actions */}
