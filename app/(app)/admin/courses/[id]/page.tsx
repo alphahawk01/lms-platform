@@ -146,6 +146,7 @@ export default async function CourseEditorPage({
               courseId={course.id}
               title={course.title}
               description={course.description}
+              thumbnailUrl={course.thumbnail_url}
             />
           </div>
         </div>

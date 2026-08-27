@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Pencil, X, Check } from "lucide-react";
+import { ImageUpload } from "@/components/image-upload";
 
 type Category = { id: string; name: string };
 
@@ -11,12 +12,14 @@ type EditCourseDetailsProps = {
   courseId: string;
   title: string;
   description: string | null;
+  thumbnailUrl: string | null;
 };
 
 export function EditCourseDetails({
   courseId,
   title,
   description,
+  thumbnailUrl,
 }: EditCourseDetailsProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -24,6 +27,7 @@ export function EditCourseDetails({
   const [open, setOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
   const [editDescription, setEditDescription] = useState(description ?? "");
+  const [editThumbnail, setEditThumbnail] = useState(thumbnailUrl ?? "");
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set()
@@ -36,6 +40,7 @@ export function EditCourseDetails({
     if (!open) return;
     setEditTitle(title);
     setEditDescription(description ?? "");
+    setEditThumbnail(thumbnailUrl ?? "");
     setError("");
 
     // Load all categories
@@ -83,6 +88,7 @@ export function EditCourseDetails({
       .update({
         title: editTitle.trim(),
         description: editDescription.trim() || null,
+        thumbnail_url: editThumbnail.trim() || null,
       })
       .eq("id", courseId);
 
@@ -154,6 +160,18 @@ export function EditCourseDetails({
                   onChange={(e) => setEditTitle(e.target.value)}
                   className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-pd-red"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">
+                  Course thumbnail
+                </label>
+                <div className="mt-2">
+                  <ImageUpload
+                    value={editThumbnail}
+                    onChange={(url) => setEditThumbnail(url)}
+                  />
+                </div>
               </div>
 
               {categoriesAvailable && (
