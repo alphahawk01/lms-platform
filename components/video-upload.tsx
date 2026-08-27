@@ -64,34 +64,35 @@ export function VideoUpload({
     setIsUploading(true);
 
     try {
-      const formData =
-        new FormData();
+      // Step 1: Get a presigned upload URL from the server
+      const presignRes = await fetch("/api/upload-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+        }),
+      });
 
-      formData.append(
-        "file",
-        file
-      );
+      const presignData = await presignRes.json();
 
-      const response =
-        await fetch(
-          "/api/upload-video",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Could not upload video."
-        );
+      if (!presignRes.ok) {
+        throw new Error(presignData.error || "Could not get upload URL.");
       }
 
-      onChange(data.url);
+      // Step 2: Upload the file directly to R2 via the presigned URL
+      const uploadRes = await fetch(presignData.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Upload to storage failed.");
+      }
+
+      // Step 3: Use the public URL
+      onChange(presignData.publicUrl);
     } catch (uploadError) {
       const message =
         uploadError instanceof Error

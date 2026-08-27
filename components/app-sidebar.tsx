@@ -24,13 +24,8 @@ const learnerNavigation = [
   },
   {
     name: "My Learning",
-    href: "/learning",
-    icon: BookOpen,
-  },
-  {
-    name: "Courses",
     href: "/courses",
-    icon: GraduationCap,
+    icon: BookOpen,
   },
 ];
 
