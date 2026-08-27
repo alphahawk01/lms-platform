@@ -2,6 +2,48 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// GET /api/admin/allocate?course_id=... — list user_ids already assigned to a course
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+
+  const isAdmin = roles?.some(
+    (r) => r.role === "admin" || r.role === "super_admin"
+  );
+
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const courseId = searchParams.get("course_id");
+
+  if (!courseId) {
+    return NextResponse.json({ error: "course_id required" }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("course_assignments")
+    .select("user_id")
+    .eq("course_id", courseId);
+
+  return NextResponse.json({
+    user_ids: (data ?? []).map((r) => r.user_id),
+  });
+}
+
 // POST /api/admin/allocate — assign a course to one or more users (admin only)
 export async function POST(request: Request) {
   const supabase = await createClient();

@@ -98,6 +98,16 @@ export default function AllocationsPage() {
     setUserSearch("");
     setDueDate("");
     setAllocateMessage("");
+
+    // Fetch existing allocations for this course to pre-tick assigned users
+    fetch(`/api/admin/allocate?course_id=${course.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user_ids) {
+          setSelectedUsers(new Set(data.user_ids));
+        }
+      })
+      .catch(() => {});
   }
 
   function toggleUser(id: string) {
