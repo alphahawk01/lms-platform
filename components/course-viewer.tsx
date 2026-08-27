@@ -17,6 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { QuizTaker } from "@/components/quiz-taker";
 
 type Course = {
   id: string;
@@ -358,6 +359,26 @@ export function CourseViewer({
             <div className="px-8 py-20 text-center text-slate-400">
               This course has no lessons yet.
             </div>
+          ) : activeLesson.lesson_type === "quiz" ? (
+            <QuizTaker
+              key={activeLesson.id}
+              lessonId={activeLesson.id}
+              lessonTitle={activeLesson.title}
+              onComplete={(passed) => {
+                if (passed) {
+                  // Mark this quiz lesson as done
+                  setCompletedLessons((prev) => {
+                    const next = new Set(prev);
+                    next.add(activeLesson.id);
+                    return next;
+                  });
+                  // Auto-advance to next lesson if not the last
+                  if (!isLastLesson) {
+                    goToLesson(currentLessonIndex + 1);
+                  }
+                }
+              }}
+            />
           ) : (
             <>
               <div className="border-b border-slate-200 px-8 py-5">
