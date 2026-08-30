@@ -1,4 +1,4 @@
-import { BookOpen } from "lucide-react";
+import { BookOpen, Archive } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CreateCourseButton } from "@/components/create-course-button";
 import { CourseCard } from "@/components/course-card";
@@ -31,9 +31,15 @@ export default async function CourseBuilderPage() {
         .order("created_at", { ascending: false })
     : null;
 
-  const courses = ((withCategory.error
+  const allCourses = ((withCategory.error
     ? plain?.data
     : withCategory.data) ?? []) as unknown as CourseRow[];
+
+  // Hide archived courses from the main builder
+  const courses = allCourses.filter((c) => c.status !== "archived");
+  const archivedCount = allCourses.filter(
+    (c) => c.status === "archived"
+  ).length;
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -48,7 +54,18 @@ export default async function CourseBuilderPage() {
           </p>
         </div>
 
-        <CreateCourseButton />
+        <div className="flex items-center gap-3">
+          {archivedCount > 0 && (
+            <a
+              href="/admin/courses/archived"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <Archive size={18} />
+              Archived ({archivedCount})
+            </a>
+          )}
+          <CreateCourseButton />
+        </div>
       </div>
 
       {!courses || courses.length === 0 ? (
