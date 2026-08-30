@@ -1,6 +1,7 @@
-import { BookOpen, MoreHorizontal } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CreateCourseButton } from "@/components/create-course-button";
+import { CourseCard } from "@/components/course-card";
 
 export default async function CourseBuilderPage() {
   const supabase = await createClient();
@@ -70,75 +71,26 @@ export default async function CourseBuilderPage() {
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {courses.map((course) => (
-            <a
-              key={course.id}
-              href={`/admin/courses/${course.id}`}
-              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="flex h-36 items-center justify-center bg-slate-100">
-                {course.thumbnail_url ? (
-                  <img
-                    src={course.thumbnail_url}
-                    alt={course.title}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <BookOpen size={36} className="text-slate-400" />
-                )}
-              </div>
+          {courses.map((course) => {
+            const categoryNames = (course.course_category_links ?? [])
+              .map((link) => {
+                const cc = link.course_categories;
+                return Array.isArray(cc) ? cc[0]?.name : cc?.name;
+              })
+              .filter((n): n is string => Boolean(n));
 
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                          course.status === "published"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {course.status === "published"
-                          ? "Published"
-                          : "Draft"}
-                      </span>
-
-                      {course.course_category_links
-                        ?.map((link) => {
-                          const cc = link.course_categories;
-                          return Array.isArray(cc) ? cc[0]?.name : cc?.name;
-                        })
-                        .filter(Boolean)
-                        .map((name) => (
-                          <span
-                            key={name}
-                            className="inline-flex rounded-full bg-pd-red/10 px-2.5 py-1 text-xs font-medium text-pd-red"
-                          >
-                            {name}
-                          </span>
-                        ))}
-                    </div>
-
-                    <h2 className="mt-3 font-semibold text-slate-900">
-                      {course.title}
-                    </h2>
-                  </div>
-
-                  <MoreHorizontal
-                    size={20}
-                    className="text-slate-400"
-                  />
-                </div>
-
-                {course.description && (
-                  <p className="mt-3 line-clamp-2 text-sm text-slate-500">
-                    {course.description}
-                  </p>
-                )}
-              </div>
-            </a>
-          ))}
+            return (
+              <CourseCard
+                key={course.id}
+                id={course.id}
+                title={course.title}
+                status={course.status}
+                thumbnailUrl={course.thumbnail_url}
+                description={course.description}
+                categoryNames={categoryNames}
+              />
+            );
+          })}
         </div>
       )}
     </div>
