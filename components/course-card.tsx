@@ -90,13 +90,13 @@ export function CourseCard({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:shadow-lg ${
+      className={`group relative rounded-2xl border border-slate-200 bg-white transition hover:shadow-lg ${
         isArchived ? "opacity-60" : ""
       }`}
     >
       {/* Card body — clicking navigates to editor */}
       <a href={`/admin/courses/${id}`} className="block">
-        <div className="flex h-36 items-center justify-center bg-slate-100">
+        <div className="flex h-36 items-center justify-center overflow-hidden rounded-t-2xl bg-slate-100">
           {thumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
