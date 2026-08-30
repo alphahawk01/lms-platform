@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#061020"/>
+  <g transform="translate(256 256)">
+    <path d="M0 -110 L150 -40 L0 30 L-150 -40 Z" fill="#e11b2d"/>
+    <path d="M-150 -40 L-150 40 L0 110 L0 30 Z" fill="#ffffff"/>
+    <path d="M150 -40 L150 40 L0 110 L0 30 Z" fill="#c4141f"/>
+  </g>
+  <text x="256" y="440" font-family="Arial, sans-serif" font-size="60" font-weight="800" fill="#ffffff" text-anchor="middle">PD</text>
+</svg>

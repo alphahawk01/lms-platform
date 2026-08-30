@@ -35,17 +35,15 @@ export default async function AppLayout({
     .single();
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50 lg:flex-row">
       <AppSidebar isAdmin={isAdmin} />
 
       <main className="min-w-0 flex-1">
-        <header className="flex h-20 items-center justify-between border-b border-slate-200 bg-white px-8">
+        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-8 lg:h-20">
           <div>
-            <p className="text-sm text-slate-500">
-              Welcome back
-            </p>
+            <p className="text-xs text-slate-500 sm:text-sm">Welcome back</p>
 
-            <h2 className="font-semibold text-slate-900">
+            <h2 className="text-sm font-semibold text-slate-900 sm:text-base">
               {profile?.full_name || user.email}
             </h2>
           </div>
@@ -59,7 +57,7 @@ export default async function AppLayout({
           </div>
         </header>
 
-        <div className="p-8">{children}</div>
+        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
   );

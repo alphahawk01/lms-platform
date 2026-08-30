@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,6 +12,8 @@ import {
   Settings,
   ShieldCheck,
   Route,
+  Menu,
+  X,
 } from "lucide-react";
 
 type AppSidebarProps = {
@@ -60,9 +63,27 @@ const adminNavigation = [
 
 export function AppSidebar({ isAdmin }: AppSidebarProps) {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return (
-    <aside className="flex min-h-screen w-64 flex-col border-r border-white/10 bg-pd-navy">
+  // Close the mobile drawer whenever the route changes
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  const sidebarContent = (
+    <>
       <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pd-red text-white">
           <GraduationCap size={22} />
@@ -76,7 +97,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
         </div>
       </div>
 
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 overflow-y-auto p-4">
         <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Learning
         </p>
@@ -152,6 +173,59 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
           </div>
         )}
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar with hamburger */}
+      <div className="flex h-16 items-center justify-between border-b border-white/10 bg-pd-navy px-4 lg:hidden">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pd-red text-white">
+            <GraduationCap size={18} />
+          </div>
+          <h1 className="text-sm font-extrabold tracking-tight text-white">
+            PREMIER<span className="text-pd-red">DATA</span>
+          </h1>
+        </div>
+
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="rounded-lg p-2 text-white transition hover:bg-white/10"
+          aria-label="Open menu"
+        >
+          <Menu size={24} />
+        </button>
+      </div>
+
+      {/* Desktop sidebar (always visible on lg+) */}
+      <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-pd-navy lg:flex">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile drawer overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-pd-navy transition-transform duration-300 lg:hidden ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute right-3 top-3 rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+          aria-label="Close menu"
+        >
+          <X size={22} />
+        </button>
+        {sidebarContent}
+      </aside>
+    </>
   );
 }
