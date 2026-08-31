@@ -5,6 +5,7 @@ import {
   sendNotification,
   type NotificationTemplate,
 } from "@/lib/notifications";
+import { createNotifications } from "@/lib/create-notification";
 
 // POST /api/admin/notify — send notification emails to selected users.
 // body: { user_ids: string[], template, course_id?, custom_subject?, custom_message? }
@@ -120,6 +121,32 @@ export async function POST(request: Request) {
       failed++;
     }
   }
+
+  // Also drop an in-app notification for each targeted user
+  const titleByTemplate: Record<string, string> = {
+    new_course: "New course assigned",
+    reminder: "Course reminder",
+    due_soon: "Course due soon",
+    custom: custom_subject || "New message",
+  };
+
+  const messageByTemplate: Record<string, string> = {
+    new_course: `You've been assigned: ${courseTitle}`,
+    reminder: `Reminder to finish: ${courseTitle}`,
+    due_soon: `${courseTitle} is due soon`,
+    custom: custom_message || "",
+  };
+
+  await createNotifications(
+    targets
+      .filter((u) => u.email)
+      .map((u) => ({
+        userId: u.id,
+        title: titleByTemplate[template] ?? "Notification",
+        message: messageByTemplate[template] ?? "",
+        link: "/courses",
+      }))
+  );
 
   return NextResponse.json({ sent, failed });
 }

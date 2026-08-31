@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createNotifications } from "@/lib/create-notification";
 
 // GET /api/admin/allocate?course_id=... — list user_ids already assigned to a course
 export async function GET(request: Request) {
@@ -115,6 +116,24 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Create in-app notifications for newly assigned users
+  const { data: course } = await admin
+    .from("courses")
+    .select("title")
+    .eq("id", course_id)
+    .single();
+
+  const courseTitle = course?.title ?? "a course";
+
+  await createNotifications(
+    toInsert.map((row) => ({
+      userId: row.user_id,
+      title: "New course assigned",
+      message: `You've been assigned: ${courseTitle}`,
+      link: "/courses",
+    }))
+  );
 
   return NextResponse.json({
     assigned: toInsert.length,
