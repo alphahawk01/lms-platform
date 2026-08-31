@@ -14,6 +14,7 @@ import {
   Route,
   Menu,
   X,
+  MessageSquare,
 } from "lucide-react";
 
 type AppSidebarProps = {
@@ -30,6 +31,11 @@ const learnerNavigation = [
     name: "My Learning",
     href: "/courses",
     icon: BookOpen,
+  },
+  {
+    name: "Messages",
+    href: "/messages",
+    icon: MessageSquare,
   },
 ];
 
