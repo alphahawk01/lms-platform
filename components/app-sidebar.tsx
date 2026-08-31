@@ -85,8 +85,13 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   const sidebarContent = (
     <>
       <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pd-red text-white">
-          <GraduationCap size={22} />
+        <div className="h-10 w-10 overflow-hidden rounded-xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icon.png"
+            alt="Premier Data"
+            className="h-full w-full object-cover"
+          />
         </div>
 
         <div>
@@ -181,8 +186,13 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
       {/* Mobile top bar with hamburger */}
       <div className="flex h-16 items-center justify-between border-b border-white/10 bg-pd-navy px-4 lg:hidden">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pd-red text-white">
-            <GraduationCap size={18} />
+          <div className="h-8 w-8 overflow-hidden rounded-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icon.png"
+              alt="Premier Data"
+              className="h-full w-full object-cover"
+            />
           </div>
           <h1 className="text-sm font-extrabold tracking-tight text-white">
             PREMIER<span className="text-pd-red">DATA</span>
