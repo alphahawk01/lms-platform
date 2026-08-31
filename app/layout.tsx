@@ -45,7 +45,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {/* Server-rendered splash painted immediately (no white flash).
             The client SplashScreen fades and removes it after hydration. */}
-        <div id="initial-splash" />
+        <div id="initial-splash">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="Premier Data" />
+          <div className="splash-wordmark">
+            PREMIER<span>DATA</span>
+          </div>
+        </div>
         <SplashScreen />
         {children}
         <Analytics />

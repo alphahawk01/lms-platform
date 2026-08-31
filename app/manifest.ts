@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "PD Training",
     description:
       "Premier Data training platform - elite-level learning and analysis.",
-    start_url: "/dashboard",
+    start_url: "/",
     display: "standalone",
     background_color: "#061020",
     theme_color: "#061020",
