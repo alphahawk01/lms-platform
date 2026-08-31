@@ -17,6 +17,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [signupComplete, setSignupComplete] = useState(false);
+  // Start in a "checking" state so we don't flash the login form before we
+  // know whether the user already has a session.
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   // If already authenticated (e.g. PWA cold launch with a persisted session),
   // skip the login screen and go straight to the dashboard.
@@ -24,6 +27,8 @@ export default function LoginPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         router.replace("/dashboard");
+      } else {
+        setCheckingAuth(false);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,6 +75,24 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // While checking for an existing session, show a branded loading screen
+  // instead of flashing the login form (prevents the "login flash on reload").
+  if (checkingAuth) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-pd-navy-deep p-6">
+        <div className="flex flex-col items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icon.png"
+            alt="Premier Data"
+            className="h-16 w-16 animate-pulse rounded-2xl"
+          />
+          <p className="text-sm text-slate-400">Loading...</p>
+        </div>
+      </main>
+    );
   }
 
   return (

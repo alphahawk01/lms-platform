@@ -126,3 +126,22 @@ body {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.85; }
 }
+
+/*
+  On mobile, show the full branded splash image. It covers the viewport and
+  hides the icon/wordmark (which are the desktop fallback). On desktop we keep
+  the lightweight centered icon + wordmark.
+*/
+@media (max-width: 767px) {
+  #initial-splash {
+    background-image: url("/splash.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  #initial-splash img,
+  #initial-splash .splash-wordmark {
+    display: none;
+  }
+}
