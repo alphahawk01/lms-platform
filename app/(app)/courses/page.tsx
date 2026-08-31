@@ -99,6 +99,27 @@ export default async function CoursesPage() {
           .order("position", { ascending: true })
       : { data: [] };
 
+  // Fetch course details for ALL courses in the assigned paths (even ones the
+  // learner doesn't have an individual assignment for yet), so locked/upcoming
+  // path courses still render.
+  const pathCourseIds = [
+    ...new Set((pathCourses ?? []).map((pc) => pc.course_id)),
+  ];
+  const { data: pathCourseDetails } =
+    pathCourseIds.length > 0
+      ? await supabase
+          .from("courses")
+          .select(
+            "id, title, description, thumbnail_url, course_category_links ( course_categories ( name ) )"
+          )
+          .in("id", pathCourseIds)
+      : { data: [] };
+
+  const courseDetailsMap = new Map<string, CourseInfo>();
+  for (const c of pathCourseDetails ?? []) {
+    courseDetailsMap.set(c.id, c as unknown as CourseInfo);
+  }
+
   const list = (assignments ?? []) as Assignment[];
 
   // Build a map of course_id → assignment for quick lookup
@@ -176,11 +197,15 @@ export default async function CoursesPage() {
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                   {orderedCourses.map((pc, idx) => {
                     const assignment = assignmentByCourse.get(pc.course_id);
-                    const course = assignment
-                      ? Array.isArray(assignment.courses)
-                        ? assignment.courses[0]
-                        : assignment.courses
-                      : null;
+                    // Prefer full course details (available for all path
+                    // courses); fall back to the assignment's joined course.
+                    const course =
+                      courseDetailsMap.get(pc.course_id) ??
+                      (assignment
+                        ? Array.isArray(assignment.courses)
+                          ? assignment.courses[0]
+                          : assignment.courses
+                        : null);
 
                     const status = assignment?.status ?? "not_started";
 
