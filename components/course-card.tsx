@@ -90,7 +90,7 @@ export function CourseCard({
 
   return (
     <div
-      className={`group relative rounded-2xl border border-slate-200 bg-white transition hover:shadow-lg ${
+      className={`group relative rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-lg ${
         isArchived ? "opacity-60" : ""
       }`}
     >

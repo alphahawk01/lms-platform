@@ -158,7 +158,7 @@ export default async function DashboardPage() {
                 <a
                   key={assignment.id}
                   href={course ? `/courses/${course.id}` : "#"}
-                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="h-32 bg-gradient-to-br from-pd-navy to-pd-navy-surface overflow-hidden">
                     {course?.thumbnail_url && (

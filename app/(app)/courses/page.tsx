@@ -200,7 +200,7 @@ export default async function CoursesPage() {
                     return (
                       <div key={pc.course_id} className="relative">
                         {isLocked ? (
-                          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white opacity-60">
+                          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white opacity-60 shadow-sm">
                             <div className="flex h-36 items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
                               <Lock size={32} className="text-slate-400" />
                             </div>
@@ -224,7 +224,7 @@ export default async function CoursesPage() {
                         ) : (
                           <Link
                             href={`/courses/${course.id}`}
-                            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-lg"
+                            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                           >
                             <div className="flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-pd-navy to-pd-navy-surface">
                               {course.thumbnail_url ? (
@@ -321,7 +321,7 @@ export default async function CoursesPage() {
                 <Link
                   key={assignment.id}
                   href={`/courses/${course.id}`}
-                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-pd-navy to-pd-navy-surface">
                     {course.thumbnail_url ? (
