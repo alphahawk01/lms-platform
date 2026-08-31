@@ -15,6 +15,8 @@ import {
   Menu,
   X,
   MessageSquare,
+  HardDrive,
+  Image as ImageIcon,
 } from "lucide-react";
 
 type AppSidebarProps = {
@@ -56,6 +58,11 @@ const adminNavigation = [
     icon: Route,
   },
   {
+    name: "Gallery",
+    href: "/admin/gallery",
+    icon: ImageIcon,
+  },
+  {
     name: "People",
     href: "/admin/people",
     icon: Users,
@@ -71,6 +78,10 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [storage, setStorage] = useState<{
+    usedBytes: number;
+    limitBytes: number;
+  } | null>(null);
 
   // Poll unread message count for the Messages badge
   useEffect(() => {
@@ -93,6 +104,35 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
       clearInterval(interval);
     };
   }, [pathname]);
+
+  // Fetch storage usage (admins only; 403 for learners is ignored)
+  useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
+    async function fetchStorage() {
+      try {
+        const res = await fetch("/api/admin/files/usage");
+        if (res.ok && active) {
+          setStorage(await res.json());
+        }
+      } catch {
+        // ignore
+      }
+    }
+    fetchStorage();
+    const interval = setInterval(fetchStorage, 60000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [isAdmin, pathname]);
+
+  function formatBytes(bytes: number): string {
+    if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(1)} GB`;
+    if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(0)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${bytes} B`;
+  }
 
   // Close the mobile drawer whenever the route changes
   useEffect(() => {
@@ -203,6 +243,40 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
       </nav>
 
       <div className="border-t border-white/10 p-4">
+        {/* Storage usage (admins) */}
+        {isAdmin && storage && (
+          <Link
+            href="/admin/gallery"
+            className="mb-3 block rounded-lg px-3 py-2.5 transition hover:bg-white/5"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <HardDrive size={14} />
+              Storage
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  storage.usedBytes / storage.limitBytes >= 1
+                    ? "bg-red-500"
+                    : storage.usedBytes / storage.limitBytes >= 0.85
+                      ? "bg-amber-500"
+                      : "bg-pd-red"
+                }`}
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (storage.usedBytes / storage.limitBytes) * 100
+                  )}%`,
+                }}
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] text-slate-400">
+              {formatBytes(storage.usedBytes)} of{" "}
+              {formatBytes(storage.limitBytes)} used
+            </p>
+          </Link>
+        )}
+
         <Link
           href="/account"
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"

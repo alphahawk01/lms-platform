@@ -234,6 +234,20 @@ export default function MessagesPage() {
           ? "video"
           : "document";
 
+      // Record the file for storage tracking (best-effort; ignored for
+      // non-admins since the endpoint is admin-only)
+      fetch("/api/admin/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_name: file.name,
+          file_url: presign.publicUrl,
+          r2_key: presign.key,
+          file_type: type,
+          size_bytes: file.size,
+        }),
+      }).catch(() => {});
+
       await sendMessage({ url: presign.publicUrl, name: file.name, type });
     } catch {
       // silently ignore for now

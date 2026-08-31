@@ -4,6 +4,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getStorageUsage } from "@/lib/storage";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
@@ -50,6 +51,18 @@ export async function POST(request: Request) {
         return NextResponse.json(
           { error: "fileName and fileType are required." },
           { status: 400 }
+        );
+      }
+
+      // Block uploads if storage is full
+      const usage = await getStorageUsage();
+      if (usage.isFull) {
+        return NextResponse.json(
+          {
+            error:
+              "Storage limit reached. Delete files or upgrade to upload more.",
+          },
+          { status: 507 }
         );
       }
 

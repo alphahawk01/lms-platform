@@ -91,7 +91,20 @@ export function VideoUpload({
         throw new Error("Upload to storage failed.");
       }
 
-      // Step 3: Use the public URL
+      // Step 3: Record the file for storage tracking
+      await fetch("/api/admin/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_name: file.name,
+          file_url: presignData.publicUrl,
+          r2_key: presignData.key,
+          file_type: "video",
+          size_bytes: file.size,
+        }),
+      });
+
+      // Step 4: Use the public URL
       onChange(presignData.publicUrl);
     } catch (uploadError) {
       const message =

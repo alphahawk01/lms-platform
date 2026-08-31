@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from "@/lib/supabase/server";
+import { getStorageUsage } from "@/lib/storage";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
@@ -53,6 +54,18 @@ export async function POST(request: Request) {
     );
   }
 
+  // Block uploads if storage is full
+  const usage = await getStorageUsage();
+  if (usage.isFull) {
+    return NextResponse.json(
+      {
+        error:
+          "Storage limit reached. Delete files or upgrade to upload more.",
+      },
+      { status: 507 }
+    );
+  }
+
   const ext = fileName.split(".").pop() || "bin";
   const key = `chat-attachments/${crypto.randomUUID()}.${ext}`;
 
@@ -65,5 +78,5 @@ export async function POST(request: Request) {
   const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 600 });
   const publicUrl = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`;
 
-  return NextResponse.json({ uploadUrl, publicUrl });
+  return NextResponse.json({ uploadUrl, publicUrl, key });
 }

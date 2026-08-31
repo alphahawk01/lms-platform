@@ -79,6 +79,20 @@ export function ImageUpload({
         .from("lesson-images")
         .getPublicUrl(filePath);
 
+      // Record the file for storage tracking. Images live in Supabase Storage
+      // (lesson-images bucket); we store the bucket path as the key.
+      fetch("/api/admin/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_name: file.name,
+          file_url: publicUrlData.publicUrl,
+          r2_key: `supabase:lesson-images/${filePath}`,
+          file_type: "image",
+          size_bytes: file.size,
+        }),
+      }).catch(() => {});
+
       onChange(publicUrlData.publicUrl);
     } catch (uploadError) {
       const message =
