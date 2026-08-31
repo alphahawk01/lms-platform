@@ -27,6 +27,7 @@ type LessonPreviewProps = {
   pages: LessonPage[];
   blocks: LessonBlock[];
   activePageId?: string;
+  onNavigate?: (pageId: string) => void;
 };
 
 export function LessonPreview({
@@ -34,6 +35,7 @@ export function LessonPreview({
   pages,
   blocks,
   activePageId,
+  onNavigate,
 }: LessonPreviewProps) {
   const [view, setView] = useState<
     "desktop" | "mobile"
@@ -81,6 +83,13 @@ export function LessonPreview({
     }
 
     setActivePage(index);
+
+    // Sync the builder's selected page so navigating in the preview also
+    // moves the admin to that page/lesson in the editor.
+    const targetPage = pages[index];
+    if (targetPage && onNavigate) {
+      onNavigate(targetPage.id);
+    }
   }
 
   return (

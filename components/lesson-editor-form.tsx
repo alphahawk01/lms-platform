@@ -787,6 +787,7 @@ export function LessonEditorForm({
             pages={pages}
             blocks={blocks}
             activePageId={selectedPageId ?? undefined}
+            onNavigate={setSelectedPageId}
           />
         </aside>
       </div>
