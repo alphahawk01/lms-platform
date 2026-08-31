@@ -55,11 +55,12 @@ async function findUsage(fileUrl: string) {
   for (const l of lessonsImage ?? [])
     usage.push({ type: "Lesson image", name: l.title });
 
-  // Lesson blocks (content may hold the URL)
+  // Lesson blocks (content may hold the URL — use ilike for partial match
+  // since the stored URL may have minor variations)
   const { data: blocks } = await admin
     .from("lesson_blocks")
     .select("id, lesson_id")
-    .eq("content", fileUrl);
+    .ilike("content", `%${fileUrl.split("/").pop()}%`);
   if (blocks && blocks.length > 0) {
     const lessonIds = [...new Set(blocks.map((b) => b.lesson_id))];
     const { data: blockLessons } = await admin
