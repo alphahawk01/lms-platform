@@ -408,7 +408,9 @@ export default function MessagesPage() {
         </div>
 
         {/* Message thread */}
-        <div className={`flex flex-col ${activeId ? "flex" : "hidden md:flex"}`}>
+        <div
+          className={`min-h-0 flex-col ${activeId ? "flex" : "hidden md:flex"}`}
+        >
           {!activeConversation ? (
             <div className="flex flex-1 flex-col items-center justify-center text-slate-400">
               <MessageSquare size={40} />
@@ -417,7 +419,7 @@ export default function MessagesPage() {
           ) : (
             <>
               {/* Thread header */}
-              <div className="flex items-center gap-3 border-b border-slate-200 p-4">
+              <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 p-4">
                 <button
                   onClick={() => setActiveId(null)}
                   className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 md:hidden"
@@ -450,7 +452,7 @@ export default function MessagesPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
                 {loadingThread ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="animate-spin text-slate-400" size={24} />
@@ -486,13 +488,13 @@ export default function MessagesPage() {
                               <img
                                 src={m.attachment_url}
                                 alt={m.attachment_name || ""}
-                                className="max-h-60 rounded-lg"
+                                className="max-h-64 w-full max-w-[220px] rounded-lg object-cover"
                               />
                             ) : m.attachment_type === "video" ? (
                               <video
                                 src={m.attachment_url}
                                 controls
-                                className="max-h-60 rounded-lg"
+                                className="max-h-64 w-full max-w-[260px] rounded-lg"
                               />
                             ) : (
                               <a
@@ -532,7 +534,7 @@ export default function MessagesPage() {
               </div>
 
               {/* Composer */}
-              <div className="border-t border-slate-200 p-3">
+              <div className="shrink-0 border-t border-slate-200 p-3">
                 <div className="flex items-end gap-2">
                   <input
                     ref={fileInputRef}
