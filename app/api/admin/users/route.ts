@@ -57,11 +57,15 @@ export async function GET() {
 
   // Build user list with status
   const userList = users.map((u) => {
-    let status: "active" | "invited" = "active";
+    let status: "active" | "invited" | "archived" = "active";
 
-    // If the user hasn't confirmed their email (invited via admin),
-    // or has no confirmed_at, they're still in "invited" state
-    if (!u.email_confirmed_at) {
+    // Banned users (archived via admin) — banned_until is set in the future.
+    const bannedUntil = (u as { banned_until?: string | null }).banned_until;
+    if (bannedUntil && new Date(bannedUntil) > new Date()) {
+      status = "archived";
+    } else if (!u.email_confirmed_at) {
+      // If the user hasn't confirmed their email (invited via admin),
+      // they're still in "invited" state
       status = "invited";
     }
 

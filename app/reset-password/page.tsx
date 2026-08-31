@@ -46,9 +46,12 @@ export default function ResetPasswordPage() {
     setMessage("");
 
     try {
-      // Updates the password for the currently authenticated (recovery) user.
-      // This persists to Supabase.
-      const { error } = await supabase.auth.updateUser({ password });
+      // Updates the password for the currently authenticated (recovery) user
+      // and clears the forced-reset flag so they aren't redirected again.
+      const { error } = await supabase.auth.updateUser({
+        password,
+        data: { must_reset_password: false },
+      });
 
       if (error) throw error;
 

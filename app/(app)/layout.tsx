@@ -19,6 +19,11 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // Force a password change if an admin flagged this account for reset.
+  if (user.user_metadata?.must_reset_password) {
+    redirect("/reset-password?forced=1");
+  }
+
   const { data: roles } = await supabase
     .from("user_roles")
     .select("role")

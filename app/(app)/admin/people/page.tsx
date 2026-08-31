@@ -12,6 +12,9 @@ import {
   Mail,
   Search,
   Upload,
+  KeyRound,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 
 type User = {
@@ -19,7 +22,7 @@ type User = {
   email: string;
   full_name: string;
   role: string;
-  status: "active" | "invited";
+  status: "active" | "invited" | "archived";
   created_at: string;
   last_sign_in_at: string | null;
 };
@@ -50,6 +53,10 @@ export default function PeoplePage() {
   // Delete confirmation
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Account actions (edit modal)
+  const [actionLoading, setActionLoading] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
 
   // Bulk import state
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -176,6 +183,32 @@ export default function PeoplePage() {
     setDeleteUser(null);
     fetchUsers();
     router.refresh();
+  }
+
+  async function runUserAction(action: string) {
+    if (!editUser) return;
+    setActionLoading(action);
+    setActionMessage("");
+
+    const res = await fetch("/api/admin/user-actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        user_id: editUser.id,
+        email: editUser.email,
+      }),
+    });
+
+    const data = await res.json();
+    setActionLoading("");
+
+    if (res.ok) {
+      setActionMessage(data.message || data.warning || "Done.");
+      fetchUsers();
+    } else {
+      setActionMessage(data.error || "Action failed.");
+    }
   }
 
   function handleCsvUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -365,17 +398,25 @@ export default function PeoplePage() {
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
                         u.status === "active"
                           ? "bg-green-50 text-green-700"
-                          : "bg-amber-50 text-amber-700"
+                          : u.status === "archived"
+                            ? "bg-slate-200 text-slate-600"
+                            : "bg-amber-50 text-amber-700"
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
                           u.status === "active"
                             ? "bg-green-500"
-                            : "bg-amber-500"
+                            : u.status === "archived"
+                              ? "bg-slate-500"
+                              : "bg-amber-500"
                         }`}
                       />
-                      {u.status === "active" ? "Active" : "Invited"}
+                      {u.status === "active"
+                        ? "Active"
+                        : u.status === "archived"
+                          ? "Archived"
+                          : "Invited"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-500">
@@ -588,6 +629,79 @@ export default function PeoplePage() {
                 </button>
               </div>
             </form>
+
+            {/* Account actions */}
+            <div className="mt-6 border-t border-slate-200 pt-5">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Account Actions
+              </p>
+
+              {actionMessage && (
+                <div className="mb-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  {actionMessage}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => runUserAction("resend_confirmation")}
+                  disabled={actionLoading !== ""}
+                  className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {actionLoading === "resend_confirmation" ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Mail size={16} />
+                  )}
+                  Resend confirmation email
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => runUserAction("force_reset")}
+                  disabled={actionLoading !== ""}
+                  className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {actionLoading === "force_reset" ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <KeyRound size={16} />
+                  )}
+                  Force password reset (email temp password)
+                </button>
+
+                {editUser.status === "archived" ? (
+                  <button
+                    type="button"
+                    onClick={() => runUserAction("unarchive")}
+                    disabled={actionLoading !== ""}
+                    className="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {actionLoading === "unarchive" ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <ArchiveRestore size={16} />
+                    )}
+                    Restore team member
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => runUserAction("archive")}
+                    disabled={actionLoading !== ""}
+                    className="flex w-full items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                  >
+                    {actionLoading === "archive" ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Archive size={16} />
+                    )}
+                    Archive team member
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
