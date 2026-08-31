@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Long-lived cookie so sessions persist across app restarts (installed PWAs).
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 400; // 400 days (browser max)
+
 // Next.js 16 renamed the `middleware` convention to `proxy`.
 // This runs on every matched request (Node.js runtime) and refreshes the
 // Supabase auth session cookie. Without it, short-lived access tokens go
@@ -13,6 +16,11 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      cookieOptions: {
+        maxAge: COOKIE_MAX_AGE,
+        sameSite: "lax",
+        secure: true,
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -23,7 +31,10 @@ export async function proxy(request: NextRequest) {
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              maxAge: COOKIE_MAX_AGE,
+            })
           );
         },
       },
