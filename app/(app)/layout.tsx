@@ -35,11 +35,11 @@ export default async function AppLayout({
     .single();
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 lg:flex-row">
+    <div className="app-bg flex min-h-screen flex-col lg:flex-row">
       <AppSidebar isAdmin={isAdmin} />
 
       <main className="min-w-0 flex-1">
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-8 lg:h-20">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-md sm:px-8 lg:h-20">
           <div>
             <p className="text-xs text-slate-500 sm:text-sm">Welcome back</p>
 

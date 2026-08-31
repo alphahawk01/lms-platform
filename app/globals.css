@@ -57,6 +57,28 @@ button:disabled,
   cursor: not-allowed;
 }
 
+/*
+  Sleek app background — a soft light gradient with subtle brand-tinted radial
+  accents in the corners. Reads as modern/premium vs. flat grey, while keeping
+  content cards perfectly readable on top.
+*/
+.app-bg {
+  background-color: #f6f8fb;
+  background-image:
+    radial-gradient(
+      ellipse 80% 60% at 0% 0%,
+      rgba(225, 27, 45, 0.05),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 70% 60% at 100% 0%,
+      rgba(10, 24, 48, 0.06),
+      transparent 55%
+    ),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  background-attachment: fixed;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
