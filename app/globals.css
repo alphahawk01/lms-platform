@@ -38,6 +38,25 @@ html {
   background-color: #0a0f1d;
 }
 
+/*
+  Tailwind v4 defaults interactive elements to cursor: default. Restore the
+  pointer cursor on clickable elements across the whole app. Disabled buttons
+  keep the not-allowed cursor.
+*/
+button:not(:disabled),
+[role="button"]:not(:disabled),
+a[href],
+label[for],
+select:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
