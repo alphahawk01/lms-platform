@@ -63,20 +63,25 @@ button:disabled,
   content cards perfectly readable on top.
 */
 .app-bg {
-  background-color: #f6f8fb;
+  background-color: #eef1f6;
   background-image:
     radial-gradient(
-      ellipse 80% 60% at 0% 0%,
-      rgba(225, 27, 45, 0.05),
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 70% 60% at 100% 0%,
-      rgba(10, 24, 48, 0.06),
+      ellipse 90% 70% at 0% 0%,
+      rgba(225, 27, 45, 0.10),
       transparent 55%
     ),
-    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    radial-gradient(
+      ellipse 85% 70% at 100% 0%,
+      rgba(10, 24, 48, 0.14),
+      transparent 55%
+    ),
+    linear-gradient(160deg, #eef2f8 0%, #dfe5ee 55%, #e9edf3 100%);
   background-attachment: fixed;
+}
+
+/* Ensure the scrollable content area shows the gradient too */
+.app-bg > main {
+  background: transparent;
 }
 
 body {
