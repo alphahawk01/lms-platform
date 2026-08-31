@@ -43,6 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* Server-rendered splash painted immediately (no white flash).
+            The client SplashScreen fades and removes it after hydration. */}
+        <div id="initial-splash" />
         <SplashScreen />
         {children}
         <Analytics />

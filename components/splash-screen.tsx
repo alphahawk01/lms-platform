@@ -1,51 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-// In-app splash screen shown on first load, then fades out.
-// Works consistently across all devices (iOS/Android/desktop) since it's
-// rendered by the app itself rather than relying on platform splash support.
+// Fades out and removes the server-rendered #initial-splash element (defined
+// in the root layout + globals.css). Because that element is painted by the
+// browser before any JavaScript runs, there is no white flash on first load.
+// This component just handles dismissing it once the app is ready.
 export function SplashScreen() {
-  const [visible, setVisible] = useState(true);
-  const [fading, setFading] = useState(false);
-
   useEffect(() => {
-    // Only show the splash once per session so it doesn't appear on every
-    // client navigation.
+    const el = document.getElementById("initial-splash");
+    if (!el) return;
+
+    // Only show the splash once per session
     const shown = sessionStorage.getItem("pd_splash_shown");
     if (shown) {
-      setVisible(false);
+      el.remove();
       return;
     }
 
-    // Start fade after a short display, then unmount
-    const fadeTimer = setTimeout(() => setFading(true), 1400);
-    const hideTimer = setTimeout(() => {
-      setVisible(false);
+    // Hold briefly, then fade out and remove
+    const fadeTimer = setTimeout(() => {
+      el.style.transition = "opacity 500ms ease";
+      el.style.opacity = "0";
+    }, 1600);
+
+    const removeTimer = setTimeout(() => {
+      el.remove();
       sessionStorage.setItem("pd_splash_shown", "1");
-    }, 1900);
+    }, 2150);
 
     return () => {
       clearTimeout(fadeTimer);
-      clearTimeout(hideTimer);
+      clearTimeout(removeTimer);
     };
   }, []);
 
-  if (!visible) return null;
-
-  return (
-    <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0f1d] transition-opacity duration-500 ${
-        fading ? "opacity-0" : "opacity-100"
-      }`}
-      style={{ pointerEvents: fading ? "none" : "auto" }}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/splash.png"
-        alt="Premier Data"
-        className="h-full w-full object-cover"
-      />
-    </div>
-  );
+  return null;
 }
