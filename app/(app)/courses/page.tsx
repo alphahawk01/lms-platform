@@ -224,7 +224,7 @@ export default async function CoursesPage() {
                         ) : (
                           <Link
                             href={`/courses/${course.id}`}
-                            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                            className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                           >
                             <div className="flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-pd-navy to-pd-navy-surface">
                               {course.thumbnail_url ? (
@@ -321,7 +321,7 @@ export default async function CoursesPage() {
                 <Link
                   key={assignment.id}
                   href={`/courses/${course.id}`}
-                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-pd-navy to-pd-navy-surface">
                     {course.thumbnail_url ? (
