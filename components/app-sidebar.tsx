@@ -70,6 +70,29 @@ const adminNavigation = [
 export function AppSidebar({ isAdmin }: AppSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // Poll unread message count for the Messages badge
+  useEffect(() => {
+    let active = true;
+    async function fetchUnread() {
+      try {
+        const res = await fetch("/api/conversations/unread");
+        if (res.ok && active) {
+          const data = await res.json();
+          setUnreadMessages(data.unread ?? 0);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [pathname]);
 
   // Close the mobile drawer whenever the route changes
   useEffect(() => {
@@ -117,6 +140,8 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
           {learnerNavigation.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
+            const showBadge =
+              item.href === "/messages" && unreadMessages > 0;
 
             return (
               <Link
@@ -129,7 +154,16 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
                 }`}
               >
                 <Icon size={19} />
-                {item.name}
+                <span className="flex-1">{item.name}</span>
+                {showBadge && (
+                  <span
+                    className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[11px] font-bold ${
+                      active ? "bg-white text-pd-red" : "bg-pd-red text-white"
+                    }`}
+                  >
+                    {unreadMessages > 9 ? "9+" : unreadMessages}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -207,10 +241,15 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
 
         <button
           onClick={() => setMobileOpen(true)}
-          className="rounded-lg p-2 text-white transition hover:bg-white/10"
+          className="relative rounded-lg p-2 text-white transition hover:bg-white/10"
           aria-label="Open menu"
         >
           <Menu size={24} />
+          {unreadMessages > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-pd-red px-1 text-[10px] font-bold text-white">
+              {unreadMessages > 9 ? "9+" : unreadMessages}
+            </span>
+          )}
         </button>
       </div>
 
