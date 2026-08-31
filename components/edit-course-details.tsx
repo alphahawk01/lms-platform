@@ -136,8 +136,8 @@ export function EditCourseDetails({
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-5 flex items-center justify-between">
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 p-6">
               <h2 className="text-lg font-semibold text-slate-900">
                 Edit course details
               </h2>
@@ -149,7 +149,7 @@ export function EditCourseDetails({
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="flex-1 space-y-4 overflow-y-auto p-6">
               <div>
                 <label className="block text-sm font-medium text-slate-700">
                   Course title
@@ -219,25 +219,25 @@ export function EditCourseDetails({
                   {error}
                 </div>
               )}
+            </div>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-xl bg-pd-red px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-pd-red-hover disabled:opacity-50"
-                >
-                  {saving && <Loader2 size={16} className="animate-spin" />}
-                  {saving ? "Saving..." : "Save changes"}
-                </button>
-              </div>
+            <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200 p-6">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-xl bg-pd-red px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-pd-red-hover disabled:opacity-50"
+              >
+                {saving && <Loader2 size={16} className="animate-spin" />}
+                {saving ? "Saving..." : "Save changes"}
+              </button>
             </div>
           </div>
         </div>
