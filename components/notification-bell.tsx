@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Bell, Check } from "lucide-react";
 
 type Notification = {
@@ -27,6 +27,7 @@ function timeAgo(dateStr: string): string {
 
 export function NotificationBell() {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
@@ -41,12 +42,12 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Initial fetch + poll every 60s
+  // Fetch on mount, on every navigation, and poll every 30s
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [fetchNotifications, pathname]);
 
   // Close on outside click
   useEffect(() => {
