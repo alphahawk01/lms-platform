@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NotificationBell } from "@/components/notification-bell";
+import { UserMenu } from "@/components/user-menu";
 
 export default async function AppLayout({
   children,
@@ -52,11 +53,10 @@ export default async function AppLayout({
           <div className="flex items-center gap-3">
             <NotificationBell />
 
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pd-red text-sm font-semibold text-white">
-              {(profile?.full_name || user.email || "U")
-                .charAt(0)
-                .toUpperCase()}
-            </div>
+            <UserMenu
+              fullName={profile?.full_name || ""}
+              email={user.email || ""}
+            />
           </div>
         </header>
 
