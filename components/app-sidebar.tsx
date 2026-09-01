@@ -327,8 +327,8 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
         </button>
       </div>
 
-      {/* Desktop sidebar (always visible on lg+) */}
-      <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-pd-navy lg:flex">
+      {/* Desktop sidebar (always visible on lg+, pinned to viewport) */}
+      <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-white/10 bg-pd-navy lg:flex">
         {sidebarContent}
       </aside>
 
