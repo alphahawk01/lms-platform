@@ -55,14 +55,24 @@ async function findUsage(fileUrl: string) {
   for (const l of lessonsImage ?? [])
     usage.push({ type: "Lesson image", name: l.title });
 
-  // Lesson blocks (content may hold the URL — use ilike for partial match
-  // since the stored URL may have minor variations)
+  // Lesson blocks: `content` is a jsonb column (can't use ilike, which only
+  // works on text). Fetch all blocks and match the stored URL/filename in JS.
+  // Match on the unique filename so minor URL variations still resolve.
+  const filename = fileUrl.split("/").pop() ?? fileUrl;
   const { data: blocks } = await admin
     .from("lesson_blocks")
-    .select("id, lesson_id")
-    .ilike("content", `%${fileUrl.split("/").pop()}%`);
-  if (blocks && blocks.length > 0) {
-    const lessonIds = [...new Set(blocks.map((b) => b.lesson_id))];
+    .select("id, lesson_id, content");
+  const matchingBlocks = (blocks ?? []).filter((b) => {
+    const c =
+      typeof b.content === "string"
+        ? b.content
+        : JSON.stringify(b.content ?? "");
+    return c.includes(filename) || c.includes(fileUrl);
+  });
+  if (matchingBlocks.length > 0) {
+    const lessonIds = [
+      ...new Set(matchingBlocks.map((b) => b.lesson_id)),
+    ].filter(Boolean);
     const { data: blockLessons } = await admin
       .from("lessons")
       .select("title")
