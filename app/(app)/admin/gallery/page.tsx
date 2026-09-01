@@ -10,6 +10,8 @@ import {
   HardDrive,
   X,
   AlertTriangle,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 
 type FileRow = {
@@ -38,6 +40,9 @@ export default function GalleryPage() {
   const [filter, setFilter] = useState<"all" | "image" | "video" | "document">(
     "all"
   );
+
+  // Preview flow
+  const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
 
   // Delete flow
   const [deleteFile, setDeleteFile] = useState<FileRow | null>(null);
@@ -177,22 +182,32 @@ export default function GalleryPage() {
           {filtered.map((f) => (
             <div
               key={f.id}
-              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+              className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
             >
-              <div className="flex h-32 items-center justify-center overflow-hidden bg-slate-100">
+              <button
+                onClick={() => setPreviewFile(f)}
+                className="relative flex h-32 w-full items-center justify-center overflow-hidden bg-slate-100"
+                title="View file"
+              >
                 {f.file_type === "image" ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={f.file_url}
                     alt={f.file_name}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover transition group-hover:scale-105"
                   />
                 ) : f.file_type === "video" ? (
                   <VideoIcon size={32} className="text-slate-400" />
                 ) : (
                   <FileText size={32} className="text-slate-400" />
                 )}
-              </div>
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-transparent transition group-hover:bg-black/40 group-hover:text-white">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
+                    <ExternalLink size={13} />
+                    View
+                  </span>
+                </span>
+              </button>
               <div className="p-3">
                 <p className="truncate text-sm font-medium text-slate-900">
                   {f.file_name}
@@ -212,6 +227,99 @@ export default function GalleryPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Preview modal */}
+      {previewFile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {previewFile.file_name}
+              </p>
+              <div className="flex items-center gap-1">
+                <a
+                  href={previewFile.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                  title="Open in new tab"
+                >
+                  <ExternalLink size={18} />
+                </a>
+                <a
+                  href={previewFile.file_url}
+                  download={previewFile.file_name}
+                  className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                  title="Download"
+                >
+                  <Download size={18} />
+                </a>
+                <button
+                  onClick={() => setPreviewFile(null)}
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100"
+                  title="Close"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-1 items-center justify-center overflow-auto bg-slate-900/95 p-4">
+              {previewFile.file_type === "image" ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewFile.file_url}
+                  alt={previewFile.file_name}
+                  className="max-h-[70vh] max-w-full rounded-lg object-contain"
+                />
+              ) : previewFile.file_type === "video" ? (
+                <video
+                  src={previewFile.file_url}
+                  controls
+                  autoPlay
+                  className="max-h-[70vh] max-w-full rounded-lg"
+                >
+                  Your browser does not support video playback.
+                </video>
+              ) : previewFile.file_url
+                  .toLowerCase()
+                  .split("?")[0]
+                  .endsWith(".pdf") ? (
+                <iframe
+                  src={previewFile.file_url}
+                  title={previewFile.file_name}
+                  className="h-[70vh] w-full rounded-lg bg-white"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-4 py-12 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
+                    <FileText size={32} className="text-white/70" />
+                  </div>
+                  <p className="max-w-sm text-sm text-white/70">
+                    This file type can&apos;t be previewed here. Open it in a
+                    new tab or download it to view.
+                  </p>
+                  <a
+                    href={previewFile.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+                  >
+                    <ExternalLink size={16} />
+                    Open file
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
