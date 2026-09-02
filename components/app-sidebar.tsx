@@ -17,6 +17,7 @@ import {
   MessageSquare,
   HardDrive,
   Image as ImageIcon,
+  ArrowRightLeft,
 } from "lucide-react";
 
 type AppSidebarProps = {
@@ -66,6 +67,11 @@ const adminNavigation = [
     name: "People",
     href: "/admin/people",
     icon: Users,
+  },
+  {
+    name: "Comparison",
+    href: "/admin/comparison",
+    icon: ArrowRightLeft,
   },
   {
     name: "Reports",

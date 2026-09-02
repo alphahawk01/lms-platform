@@ -1,0 +1,545 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  Upload,
+  FileText,
+  X,
+  Sparkles,
+  Target,
+  AlertTriangle,
+  CheckCircle2,
+  Lightbulb,
+  ArrowRightLeft,
+} from "lucide-react";
+import {
+  parseInstances,
+  compareInstances,
+  formatTime,
+  type Instance,
+  type ComparisonRow,
+  type MatchStatus,
+} from "@/lib/comparison/xml-compare";
+import {
+  generateInsights,
+  generateRecommendations,
+} from "@/lib/comparison/insights";
+
+type LoadedFile = { name: string; instances: Instance[] };
+
+const STATUS_META: Record<
+  MatchStatus,
+  { label: string; badge: string; dot: string }
+> = {
+  exact: {
+    label: "Exact",
+    badge: "bg-emerald-100 text-emerald-700",
+    dot: "bg-emerald-500",
+  },
+  wrong_stat: {
+    label: "Wrong stat",
+    badge: "bg-amber-100 text-amber-700",
+    dot: "bg-amber-500",
+  },
+  wrong_player: {
+    label: "Wrong player",
+    badge: "bg-orange-100 text-orange-700",
+    dot: "bg-orange-500",
+  },
+  wrong_team: {
+    label: "Wrong team",
+    badge: "bg-red-100 text-red-700",
+    dot: "bg-red-500",
+  },
+  missed: {
+    label: "Missed",
+    badge: "bg-slate-200 text-slate-700",
+    dot: "bg-slate-400",
+  },
+  extra: {
+    label: "Extra",
+    badge: "bg-purple-100 text-purple-700",
+    dot: "bg-purple-500",
+  },
+};
+
+const TONE_META = {
+  positive: {
+    icon: CheckCircle2,
+    ring: "border-emerald-200 bg-emerald-50",
+    ic1: "text-emerald-600",
+  },
+  warning: {
+    icon: AlertTriangle,
+    ring: "border-amber-200 bg-amber-50",
+    ic1: "text-amber-600",
+  },
+  critical: {
+    icon: AlertTriangle,
+    ring: "border-red-200 bg-red-50",
+    ic1: "text-red-600",
+  },
+  neutral: {
+    icon: Sparkles,
+    ring: "border-slate-200 bg-slate-50",
+    ic1: "text-slate-500",
+  },
+};
+
+function Dropzone({
+  title,
+  subtitle,
+  file,
+  onLoad,
+  onClear,
+}: {
+  title: string;
+  subtitle: string;
+  file: LoadedFile | null;
+  onLoad: (f: LoadedFile) => void;
+  onClear: () => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFiles(fileList: FileList | null) {
+    setError(null);
+    const f = fileList?.[0];
+    if (!f) return;
+    try {
+      const text = await f.text();
+      const instances = parseInstances(text);
+      if (instances.length === 0) {
+        setError("No <instance> entries found in this file.");
+        return;
+      }
+      onLoad({ name: f.name, instances });
+    } catch {
+      setError("Could not read that file.");
+    }
+  }
+
+  return (
+    <div>
+      <label
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          handleFiles(e.dataTransfer.files);
+        }}
+        className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition ${
+          file
+            ? "border-emerald-300 bg-emerald-50/50"
+            : "border-slate-300 bg-slate-50 hover:border-pd-red hover:bg-red-50/40"
+        }`}
+      >
+        <input
+          type="file"
+          accept=".xml,text/xml,application/xml"
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+        {file ? (
+          <>
+            <FileText className="mb-2 text-emerald-600" size={28} />
+            <p className="text-sm font-semibold text-slate-900">{file.name}</p>
+            <p className="text-xs text-slate-500">
+              {file.instances.length} instances parsed
+            </p>
+          </>
+        ) : (
+          <>
+            <Upload className="mb-2 text-slate-400" size={28} />
+            <p className="text-sm font-semibold text-slate-900">{title}</p>
+            <p className="text-xs text-slate-500">{subtitle}</p>
+          </>
+        )}
+      </label>
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {file && (
+        <button
+          onClick={onClear}
+          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-red-600"
+        >
+          <X size={13} /> Remove
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+        {label}
+      </p>
+      <p className={`mt-1 text-2xl font-bold ${accent ?? "text-slate-900"}`}>
+        {value}
+      </p>
+      {sub && <p className="text-xs text-slate-500">{sub}</p>}
+    </div>
+  );
+}
+
+export default function ComparisonPage() {
+  const [master, setMaster] = useState<LoadedFile | null>(null);
+  const [analyst, setAnalyst] = useState<LoadedFile | null>(null);
+  const [tolerance, setTolerance] = useState(3);
+  const [statusFilter, setStatusFilter] = useState<MatchStatus | "all">("all");
+
+  const result = useMemo(() => {
+    if (!master || !analyst) return null;
+    return compareInstances(master.instances, analyst.instances, tolerance);
+  }, [master, analyst, tolerance]);
+
+  const insights = useMemo(
+    () => (result ? generateInsights(result) : []),
+    [result]
+  );
+  const recommendations = useMemo(
+    () => (result ? generateRecommendations(result) : []),
+    [result]
+  );
+
+  const filteredRows: ComparisonRow[] = useMemo(() => {
+    if (!result) return [];
+    if (statusFilter === "all") return result.rows;
+    return result.rows.filter((r) => r.status === statusFilter);
+  }, [result, statusFilter]);
+
+  function swap() {
+    const m = master;
+    setMaster(analyst);
+    setAnalyst(m);
+  }
+
+  return (
+    <div className="p-6 lg:p-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          Comparison
+        </h1>
+        <div className="mt-3 h-1 w-12 rounded-full bg-pd-red" />
+        <p className="mt-3 max-w-2xl text-sm text-slate-600">
+          Upload a master XML and an analyst XML to grade accuracy. Instances are
+          matched by timestamp (within the tolerance), then compared on team,
+          player number and stat.
+        </p>
+      </div>
+
+      {/* Upload row */}
+      <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr]">
+        <div>
+          <p className="mb-2 text-sm font-semibold text-slate-700">
+            Master{" "}
+            <span className="font-normal text-slate-400">
+              (correct reference)
+            </span>
+          </p>
+          <Dropzone
+            title="Upload master XML"
+            subtitle="Drag & drop or click"
+            file={master}
+            onLoad={setMaster}
+            onClear={() => setMaster(null)}
+          />
+        </div>
+
+        <div className="flex items-end justify-center pb-6">
+          <button
+            onClick={swap}
+            disabled={!master && !analyst}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-40"
+            title="Swap master and analyst"
+          >
+            <ArrowRightLeft size={14} /> Swap
+          </button>
+        </div>
+
+        <div>
+          <p className="mb-2 text-sm font-semibold text-slate-700">
+            Analyst{" "}
+            <span className="font-normal text-slate-400">(being graded)</span>
+          </p>
+          <Dropzone
+            title="Upload analyst XML"
+            subtitle="Drag & drop or click"
+            file={analyst}
+            onLoad={setAnalyst}
+            onClear={() => setAnalyst(null)}
+          />
+        </div>
+      </div>
+
+      {/* Tolerance control */}
+      <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <span className="text-sm font-semibold text-slate-700">
+          Timestamp tolerance
+        </span>
+        <div className="flex gap-1">
+          {[2, 3, 5].map((t) => (
+            <button
+              key={t}
+              onClick={() => setTolerance(t)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                tolerance === t
+                  ? "bg-pd-red text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              ±{t}s
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-slate-500">
+          Events within this window are matched; the stat still has to agree to
+          count as exact.
+        </span>
+      </div>
+
+      {!result && (
+        <div className="mt-10 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-16 text-center">
+          <Target className="mb-3 text-slate-300" size={40} />
+          <p className="text-sm font-medium text-slate-500">
+            Upload both files to see the comparison.
+          </p>
+        </div>
+      )}
+
+      {result && (
+        <>
+          {/* Summary cards */}
+          <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+            <StatCard
+              label="Accuracy"
+              value={`${(result.summary.accuracy * 100).toFixed(1)}%`}
+              accent={
+                result.summary.accuracy >= 0.9
+                  ? "text-emerald-600"
+                  : result.summary.accuracy >= 0.75
+                    ? "text-amber-600"
+                    : "text-red-600"
+              }
+              sub={`${result.summary.exact}/${result.summary.masterTotal} exact`}
+            />
+            <StatCard label="Exact" value={`${result.summary.exact}`} accent="text-emerald-600" />
+            <StatCard label="Wrong stat" value={`${result.summary.wrongStat}`} accent="text-amber-600" />
+            <StatCard label="Wrong player" value={`${result.summary.wrongPlayer}`} accent="text-orange-600" />
+            <StatCard label="Wrong team" value={`${result.summary.wrongTeam}`} accent="text-red-600" />
+            <StatCard label="Missed" value={`${result.summary.missed}`} accent="text-slate-600" />
+            <StatCard label="Extra" value={`${result.summary.extra}`} accent="text-purple-600" />
+          </div>
+
+          {/* Category breakdown */}
+          {result.byCategory.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-3 text-sm font-semibold text-slate-700">
+                Accuracy by stat category
+              </h2>
+              <div className="space-y-2.5">
+                {result.byCategory.map((c) => (
+                  <div key={c.category} className="flex items-center gap-3">
+                    <span className="w-32 shrink-0 truncate text-sm text-slate-600">
+                      {c.category}
+                    </span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={`h-full rounded-full ${
+                          c.accuracy >= 0.9
+                            ? "bg-emerald-500"
+                            : c.accuracy >= 0.75
+                              ? "bg-amber-500"
+                              : "bg-red-500"
+                        }`}
+                        style={{ width: `${c.accuracy * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-24 shrink-0 text-right text-xs text-slate-500">
+                      {(c.accuracy * 100).toFixed(0)}% ({c.exact}/{c.total})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI insights */}
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles size={18} className="text-pd-red" />
+                <h2 className="text-sm font-semibold text-slate-700">
+                  AI insights
+                </h2>
+              </div>
+              <div className="space-y-2.5">
+                {insights.map((ins, i) => {
+                  const meta = TONE_META[ins.tone];
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      key={i}
+                      className={`flex gap-3 rounded-xl border p-3 ${meta.ring}`}
+                    >
+                      <Icon size={18} className={`mt-0.5 shrink-0 ${meta.ic1}`} />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {ins.title}
+                        </p>
+                        <p className="text-xs text-slate-600">{ins.detail}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <Lightbulb size={18} className="text-pd-red" />
+                <h2 className="text-sm font-semibold text-slate-700">
+                  Recommendations
+                </h2>
+              </div>
+              <ul className="space-y-2">
+                {recommendations.map((r, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-slate-600">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-pd-red" />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Status filter */}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                statusFilter === "all"
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              All ({result.rows.length})
+            </button>
+            {(Object.keys(STATUS_META) as MatchStatus[]).map((s) => {
+              const n = result.rows.filter((r) => r.status === s).length;
+              if (n === 0) return null;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    statusFilter === s
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${STATUS_META[s].dot}`}
+                  />
+                  {STATUS_META[s].label} ({n})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Synced side-by-side timeline */}
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="grid grid-cols-[110px_1fr_1fr] border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <div className="p-3">Status</div>
+              <div className="border-l border-slate-200 p-3">
+                Master {master ? `· ${master.name}` : ""}
+              </div>
+              <div className="border-l border-slate-200 p-3">
+                Analyst {analyst ? `· ${analyst.name}` : ""}
+              </div>
+            </div>
+            <div className="max-h-[600px] overflow-y-auto">
+              {filteredRows.map((row, i) => {
+                const meta = STATUS_META[row.status];
+                return (
+                  <div
+                    key={i}
+                    className="grid grid-cols-[110px_1fr_1fr] border-b border-slate-100 text-sm last:border-b-0 hover:bg-slate-50/60"
+                  >
+                    <div className="flex items-center p-3">
+                      <span
+                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${meta.badge}`}
+                      >
+                        {meta.label}
+                      </span>
+                    </div>
+                    <TimelineCell instance={row.master} side="master" />
+                    <TimelineCell
+                      instance={row.analyst}
+                      side="analyst"
+                      delta={row.timeDelta}
+                    />
+                  </div>
+                );
+              })}
+              {filteredRows.length === 0 && (
+                <div className="p-8 text-center text-sm text-slate-400">
+                  No rows for this filter.
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TimelineCell({
+  instance,
+  side,
+  delta,
+}: {
+  instance: Instance | null;
+  side: "master" | "analyst";
+  delta?: number | null;
+}) {
+  const borderClass = side === "master" ? "border-l border-slate-200" : "border-l border-slate-200";
+  if (!instance) {
+    return (
+      <div className={`p-3 ${borderClass}`}>
+        <span className="text-xs italic text-slate-300">— no entry —</span>
+      </div>
+    );
+  }
+  return (
+    <div className={`p-3 ${borderClass}`}>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="font-mono text-xs font-semibold text-slate-500">
+          {formatTime(instance.start)}
+        </span>
+        {delta != null && delta > 0 && (
+          <span className="text-[10px] text-slate-400">(+{delta.toFixed(1)}s)</span>
+        )}
+        <span className="text-sm font-semibold text-slate-900">
+          {instance.stat || instance.category || "—"}
+        </span>
+      </div>
+      <p className="text-xs text-slate-500">
+        {instance.team}
+        {instance.playerNumber != null && (
+          <span className="font-medium text-slate-700"> · #{instance.playerNumber}</span>
+        )}
+      </p>
+    </div>
+  );
+}
