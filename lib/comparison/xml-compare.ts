@@ -207,6 +207,8 @@ const EVENT_STAT_KEYWORDS = [
   "bounce", // catch-all for bounce variants
   "throw in",
   "throw-in",
+  "boundary throw", // "Boundary Throws" = boundary throw-in
+  "throw", // catch-all for throw variants (boundary throws, throw ins)
 ];
 
 function isEventStat(stat: string): boolean {
