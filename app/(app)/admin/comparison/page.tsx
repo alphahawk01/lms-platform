@@ -421,6 +421,28 @@ export default function ComparisonPage() {
     return { total, exact, accuracy: total > 0 ? exact / total : 0 };
   }, [scopedStatBreakdown]);
 
+  // Real comparison teams have master instances and a proper name. Teams with
+  // no master instances (analyst-only extras from a name mismatch) or "Unknown"
+  // are surfaced separately as a warning rather than as accuracy cards.
+  const realTeams = useMemo(
+    () =>
+      (result?.byTeam ?? []).filter(
+        (t) => t.masterTotal > 0 && t.team.toLowerCase() !== "unknown"
+      ),
+    [result]
+  );
+  const unmatchedTeams = useMemo(
+    () =>
+      (result?.byTeam ?? []).filter(
+        (t) => t.masterTotal === 0 || t.team.toLowerCase() === "unknown"
+      ),
+    [result]
+  );
+  const unmatchedExtra = useMemo(
+    () => unmatchedTeams.reduce((a, t) => a + t.extra, 0),
+    [unmatchedTeams]
+  );
+
   function swap() {
     const m = master;
     setMaster(analyst);
@@ -852,16 +874,44 @@ export default function ComparisonPage() {
           )}
 
           {/* Per-team breakdown */}
-          {result.byTeam.length > 0 && (
+          {realTeams.length > 0 && (
             <div className="mt-4">
               <h2 className="mb-3 text-sm font-semibold text-slate-700">
                 Accuracy by team
               </h2>
               <div className="grid gap-3 md:grid-cols-2">
-                {result.byTeam.map((t) => (
+                {realTeams.map((t) => (
                   <TeamCard key={t.team} team={t} />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Unmatched teams warning (name mismatch between files) */}
+          {unmatchedExtra > 0 && (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-sm text-amber-800">
+              <AlertTriangle size={17} className="mt-0.5 shrink-0 text-amber-500" />
+              <p>
+                <span className="font-semibold">{unmatchedExtra}</span> analyst
+                instance{unmatchedExtra === 1 ? "" : "s"} couldn&apos;t be
+                matched to any master team
+                {unmatchedTeams.some(
+                  (t) => t.team.toLowerCase() !== "unknown"
+                ) && (
+                  <>
+                    {" "}
+                    (
+                    {unmatchedTeams
+                      .filter((t) => t.team.toLowerCase() !== "unknown")
+                      .map((t) => `"${t.team}"`)
+                      .join(", ")}
+                    )
+                  </>
+                )}
+                . The team names likely differ between the master and analyst
+                files — rename them to match so these are compared instead of
+                counted as extras.
+              </p>
             </div>
           )}
 
@@ -919,7 +969,7 @@ export default function ComparisonPage() {
           </div>
 
           {/* Team filter */}
-          {result.byTeam.length > 1 && (
+          {realTeams.length > 1 && (
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Team
@@ -934,7 +984,7 @@ export default function ComparisonPage() {
               >
                 Both teams
               </button>
-              {result.byTeam.map((t) => (
+              {realTeams.map((t) => (
                 <button
                   key={t.team}
                   onClick={() => setTeamFilter(t.team)}
