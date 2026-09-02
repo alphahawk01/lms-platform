@@ -50,6 +50,24 @@ export type CategoryBreakdown = {
   accuracy: number;
 };
 
+export type TeamBreakdown = {
+  team: string;
+  /** number of master instances for this team */
+  masterTotal: number;
+  exact: number;
+  wrongStat: number;
+  wrongPlayer: number;
+  /** analyst put this team's event on the other team (or vice versa) */
+  wrongTeam: number;
+  missed: number;
+  /** analyst-only instances attributed to this team */
+  extra: number;
+  /** exact / masterTotal */
+  accuracy: number;
+  /** average absolute time delta of this team's exact matches */
+  avgTimeDrift: number;
+};
+
 export type ComparisonResult = {
   rows: ComparisonRow[];
   tolerance: number;
@@ -68,6 +86,7 @@ export type ComparisonResult = {
     avgTimeDrift: number;
   };
   byCategory: CategoryBreakdown[];
+  byTeam: TeamBreakdown[];
 };
 
 /** Parse a jersey number out of strings like "St Josephs 10", "10 10", "02 2", "#10". */
@@ -285,6 +304,74 @@ export function compareInstances(
     }))
     .sort((a, b) => b.total - a.total);
 
+  // Per-team accuracy. A row is attributed to the master's team, or (for
+  // analyst-only "extra" rows) to the analyst's team.
+  type TeamAcc = {
+    masterTotal: number;
+    exact: number;
+    wrongStat: number;
+    wrongPlayer: number;
+    wrongTeam: number;
+    missed: number;
+    extra: number;
+    deltas: number[];
+  };
+  const teamMap = new Map<string, TeamAcc>();
+  const ensureTeam = (name: string): TeamAcc => {
+    const key = name || "Unknown";
+    let t = teamMap.get(key);
+    if (!t) {
+      t = {
+        masterTotal: 0,
+        exact: 0,
+        wrongStat: 0,
+        wrongPlayer: 0,
+        wrongTeam: 0,
+        missed: 0,
+        extra: 0,
+        deltas: [],
+      };
+      teamMap.set(key, t);
+    }
+    return t;
+  };
+
+  for (const r of rows) {
+    if (r.status === "extra") {
+      const t = ensureTeam(r.analyst?.team ?? "Unknown");
+      t.extra += 1;
+      continue;
+    }
+    const team = r.master?.team ?? r.analyst?.team ?? "Unknown";
+    const t = ensureTeam(team);
+    t.masterTotal += 1;
+    if (r.status === "exact") {
+      t.exact += 1;
+      if (r.timeDelta != null) t.deltas.push(r.timeDelta);
+    } else if (r.status === "wrong_stat") t.wrongStat += 1;
+    else if (r.status === "wrong_player") t.wrongPlayer += 1;
+    else if (r.status === "wrong_team") t.wrongTeam += 1;
+    else if (r.status === "missed") t.missed += 1;
+  }
+
+  const byTeam: TeamBreakdown[] = Array.from(teamMap.entries())
+    .map(([team, v]) => ({
+      team,
+      masterTotal: v.masterTotal,
+      exact: v.exact,
+      wrongStat: v.wrongStat,
+      wrongPlayer: v.wrongPlayer,
+      wrongTeam: v.wrongTeam,
+      missed: v.missed,
+      extra: v.extra,
+      accuracy: v.masterTotal > 0 ? v.exact / v.masterTotal : 0,
+      avgTimeDrift:
+        v.deltas.length > 0
+          ? v.deltas.reduce((a, b) => a + b, 0) / v.deltas.length
+          : 0,
+    }))
+    .sort((a, b) => b.masterTotal - a.masterTotal);
+
   return {
     rows,
     tolerance,
@@ -301,6 +388,7 @@ export function compareInstances(
       avgTimeDrift,
     },
     byCategory,
+    byTeam,
   };
 }
 

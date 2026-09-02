@@ -19,6 +19,7 @@ import {
   type Instance,
   type ComparisonRow,
   type MatchStatus,
+  type TeamBreakdown,
 } from "@/lib/comparison/xml-compare";
 import {
   generateInsights,
@@ -167,6 +168,66 @@ function Dropzone({
   );
 }
 
+function TeamCard({ team }: { team: TeamBreakdown }) {
+  const accColor =
+    team.accuracy >= 0.9
+      ? "text-emerald-600"
+      : team.accuracy >= 0.75
+        ? "text-amber-600"
+        : "text-red-600";
+  const barColor =
+    team.accuracy >= 0.9
+      ? "bg-emerald-500"
+      : team.accuracy >= 0.75
+        ? "bg-amber-500"
+        : "bg-red-500";
+
+  const chips: { label: string; value: number; cls: string }[] = [
+    { label: "Exact", value: team.exact, cls: "text-emerald-600" },
+    { label: "Wrong stat", value: team.wrongStat, cls: "text-amber-600" },
+    { label: "Wrong player", value: team.wrongPlayer, cls: "text-orange-600" },
+    { label: "Wrong team", value: team.wrongTeam, cls: "text-red-600" },
+    { label: "Missed", value: team.missed, cls: "text-slate-600" },
+    { label: "Extra", value: team.extra, cls: "text-purple-600" },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="truncate text-sm font-bold text-slate-900">
+          {team.team}
+        </h3>
+        <span className={`text-lg font-bold ${accColor}`}>
+          {(team.accuracy * 100).toFixed(1)}%
+        </span>
+      </div>
+      <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full rounded-full ${barColor}`}
+          style={{ width: `${team.accuracy * 100}%` }}
+        />
+      </div>
+      <p className="mb-3 text-xs text-slate-500">
+        {team.exact}/{team.masterTotal} master instances exact · avg drift{" "}
+        {team.avgTimeDrift.toFixed(1)}s
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {chips.map((c) => (
+          <div
+            key={c.label}
+            className="rounded-lg bg-slate-50 px-2 py-1.5 text-center"
+          >
+            <p className={`text-base font-bold ${c.cls}`}>{c.value}</p>
+            <p className="text-[10px] uppercase tracking-wide text-slate-400">
+              {c.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -196,6 +257,7 @@ export default function ComparisonPage() {
   const [analyst, setAnalyst] = useState<LoadedFile | null>(null);
   const [tolerance, setTolerance] = useState(3);
   const [statusFilter, setStatusFilter] = useState<MatchStatus | "all">("all");
+  const [teamFilter, setTeamFilter] = useState<string | "all">("all");
 
   const result = useMemo(() => {
     if (!master || !analyst) return null;
@@ -211,11 +273,20 @@ export default function ComparisonPage() {
     [result]
   );
 
-  const filteredRows: ComparisonRow[] = useMemo(() => {
+  const rowTeam = (r: ComparisonRow) =>
+    r.master?.team ?? r.analyst?.team ?? "Unknown";
+
+  // Rows scoped to the selected team (used for status-filter counts).
+  const teamScopedRows: ComparisonRow[] = useMemo(() => {
     if (!result) return [];
-    if (statusFilter === "all") return result.rows;
-    return result.rows.filter((r) => r.status === statusFilter);
-  }, [result, statusFilter]);
+    if (teamFilter === "all") return result.rows;
+    return result.rows.filter((r) => rowTeam(r) === teamFilter);
+  }, [result, teamFilter]);
+
+  const filteredRows: ComparisonRow[] = useMemo(() => {
+    if (statusFilter === "all") return teamScopedRows;
+    return teamScopedRows.filter((r) => r.status === statusFilter);
+  }, [teamScopedRows, statusFilter]);
 
   function swap() {
     const m = master;
@@ -373,6 +444,20 @@ export default function ComparisonPage() {
             </div>
           )}
 
+          {/* Per-team breakdown */}
+          {result.byTeam.length > 0 && (
+            <div className="mt-4">
+              <h2 className="mb-3 text-sm font-semibold text-slate-700">
+                Accuracy by team
+              </h2>
+              <div className="grid gap-3 md:grid-cols-2">
+                {result.byTeam.map((t) => (
+                  <TeamCard key={t.team} team={t} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* AI insights */}
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -422,8 +507,40 @@ export default function ComparisonPage() {
             </div>
           </div>
 
+          {/* Team filter */}
+          {result.byTeam.length > 1 && (
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Team
+              </span>
+              <button
+                onClick={() => setTeamFilter("all")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  teamFilter === "all"
+                    ? "bg-pd-navy text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Both teams
+              </button>
+              {result.byTeam.map((t) => (
+                <button
+                  key={t.team}
+                  onClick={() => setTeamFilter(t.team)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    teamFilter === t.team
+                      ? "bg-pd-navy text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {t.team}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Status filter */}
-          <div className="mt-6 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               onClick={() => setStatusFilter("all")}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
@@ -432,10 +549,10 @@ export default function ComparisonPage() {
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              All ({result.rows.length})
+              All ({teamScopedRows.length})
             </button>
             {(Object.keys(STATUS_META) as MatchStatus[]).map((s) => {
-              const n = result.rows.filter((r) => r.status === s).length;
+              const n = teamScopedRows.filter((r) => r.status === s).length;
               if (n === 0) return null;
               return (
                 <button
