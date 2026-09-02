@@ -12,6 +12,7 @@ import {
   Lightbulb,
   ArrowRightLeft,
   Clock,
+  Download,
 } from "lucide-react";
 import {
   parseInstances,
@@ -22,6 +23,7 @@ import {
   type ComparisonRow,
   type MatchStatus,
   type TeamBreakdown,
+  type StatBreakdown,
 } from "@/lib/comparison/xml-compare";
 import {
   generateInsights,
@@ -168,6 +170,28 @@ function Dropzone({
       )}
     </div>
   );
+}
+
+function exportStatCsv(stats: StatBreakdown[]) {
+  const header = "Statistic Type,Master,Exact,Accuracy %";
+  const lines = stats.map(
+    (s) =>
+      `${JSON.stringify(s.stat)},${s.total},${s.exact},${(
+        s.accuracy * 100
+      ).toFixed(1)}`
+  );
+  const totalMaster = stats.reduce((a, s) => a + s.total, 0);
+  const totalExact = stats.reduce((a, s) => a + s.exact, 0);
+  const totalAcc = totalMaster > 0 ? (totalExact / totalMaster) * 100 : 0;
+  lines.push(`Totals,${totalMaster},${totalExact},${totalAcc.toFixed(1)}`);
+  const csv = [header, ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "stat-breakdown.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function TeamCard({ team }: { team: TeamBreakdown }) {
@@ -600,6 +624,78 @@ export default function ComparisonPage() {
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Per-stat breakdown table */}
+          {result.byStat.length > 0 && (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
+                <h2 className="text-sm font-semibold text-slate-700">
+                  Statistic breakdown
+                </h2>
+                <button
+                  onClick={() => exportStatCsv(result.byStat)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                >
+                  <Download size={13} /> Export CSV
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-4 py-2.5">Statistic Type</th>
+                      <th className="px-4 py-2.5 text-right">Master</th>
+                      <th className="px-4 py-2.5 text-right">Exact</th>
+                      <th className="px-4 py-2.5 text-right">Accuracy</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.byStat.map((s) => (
+                      <tr
+                        key={s.stat}
+                        className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60"
+                      >
+                        <td className="px-4 py-2 font-medium text-slate-800">
+                          {s.stat}
+                        </td>
+                        <td className="px-4 py-2 text-right tabular-nums text-slate-600">
+                          {s.total}
+                        </td>
+                        <td className="px-4 py-2 text-right tabular-nums text-slate-600">
+                          {s.exact}
+                        </td>
+                        <td
+                          className={`px-4 py-2 text-right tabular-nums font-semibold ${
+                            s.accuracy >= 0.9
+                              ? "text-emerald-600"
+                              : s.accuracy >= 0.75
+                                ? "text-amber-600"
+                                : "text-red-600"
+                          }`}
+                        >
+                          {(s.accuracy * 100).toFixed(0)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold text-slate-900">
+                      <td className="px-4 py-2.5">Totals</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">
+                        {result.summary.masterTotal}
+                      </td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">
+                        {result.summary.exact}
+                      </td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">
+                        {(result.summary.accuracy * 100).toFixed(0)}%
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </div>
           )}

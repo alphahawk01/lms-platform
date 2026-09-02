@@ -50,6 +50,16 @@ export type CategoryBreakdown = {
   accuracy: number;
 };
 
+export type StatBreakdown = {
+  /** the individual stat text, e.g. "Hit Out", "Loose Ball Get" */
+  stat: string;
+  /** master instances of this stat */
+  total: number;
+  /** exact matches (team + player + stat) */
+  exact: number;
+  accuracy: number;
+};
+
 export type TeamBreakdown = {
   team: string;
   /** number of master instances for this team */
@@ -86,6 +96,7 @@ export type ComparisonResult = {
     avgTimeDrift: number;
   };
   byCategory: CategoryBreakdown[];
+  byStat: StatBreakdown[];
   byTeam: TeamBreakdown[];
 };
 
@@ -330,6 +341,25 @@ export function compareInstances(
     }))
     .sort((a, b) => b.total - a.total);
 
+  // Per-stat accuracy (by the individual stat text, e.g. "Hit Out").
+  const statMap = new Map<string, { total: number; exact: number }>();
+  for (const r of rows) {
+    if (!r.master) continue;
+    const stat = r.master.stat || "Uncategorised";
+    const entry = statMap.get(stat) ?? { total: 0, exact: 0 };
+    entry.total += 1;
+    if (r.status === "exact") entry.exact += 1;
+    statMap.set(stat, entry);
+  }
+  const byStat: StatBreakdown[] = Array.from(statMap.entries())
+    .map(([stat, v]) => ({
+      stat,
+      total: v.total,
+      exact: v.exact,
+      accuracy: v.total > 0 ? v.exact / v.total : 0,
+    }))
+    .sort((a, b) => a.stat.localeCompare(b.stat));
+
   // Per-team accuracy. A row is attributed to the master's team, or (for
   // analyst-only "extra" rows) to the analyst's team.
   type TeamAcc = {
@@ -414,6 +444,7 @@ export function compareInstances(
       avgTimeDrift,
     },
     byCategory,
+    byStat,
     byTeam,
   };
 }
