@@ -270,13 +270,26 @@ export default function ComparisonPage() {
   const [manualStart, setManualStart] = useState(""); // mm:ss
   const [manualEnd, setManualEnd] = useState(""); // mm:ss
 
-  // The analyst's naturally-covered window.
+  // Auto window: use the covered span of whichever file has fewer instances
+  // (the partial-coverage file), regardless of whether that's master or
+  // analyst. This restricts the comparison to the section both should cover.
   const analystWindow = useMemo(() => {
-    if (!analyst || analyst.instances.length === 0) return null;
-    const starts = analyst.instances.map((i) => i.start);
-    const ends = analyst.instances.map((i) => i.end);
-    return { start: Math.min(...starts), end: Math.max(...ends) };
-  }, [analyst]);
+    const files = [master, analyst].filter(
+      (f): f is LoadedFile => !!f && f.instances.length > 0
+    );
+    if (files.length === 0) return null;
+    // Pick the smaller file (fewest instances).
+    const smaller = files.reduce((a, b) =>
+      b.instances.length < a.instances.length ? b : a
+    );
+    const starts = smaller.instances.map((i) => i.start);
+    const ends = smaller.instances.map((i) => i.end);
+    return {
+      start: Math.min(...starts),
+      end: Math.max(...ends),
+      source: smaller.name,
+    };
+  }, [master, analyst]);
 
   // The effective [start, end] window used for the comparison.
   const effectiveRange = useMemo(() => {
@@ -435,7 +448,7 @@ export default function ComparisonPage() {
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              Analyst&apos;s section
+              Overlapping section
             </button>
             <button
               onClick={() => setRangeMode("manual")}
@@ -486,14 +499,15 @@ export default function ComparisonPage() {
         <p className="mt-2.5 text-xs text-slate-500">
           {rangeMode === "auto" && analystWindow && (
             <>
-              Comparing only the section the analyst covered:{" "}
+              Comparing only the section covered by the smaller file
+              {analystWindow.source ? ` (${analystWindow.source})` : ""}:{" "}
               <span className="font-semibold text-slate-700">
                 {analystWindow.start.toFixed(2)} –{" "}
                 {analystWindow.end.toFixed(2)}s
               </span>{" "}
               ({formatTime(analystWindow.start)} –{" "}
-              {formatTime(analystWindow.end)}). Master instances outside this
-              window are ignored so a partial analyst file isn&apos;t penalised.
+              {formatTime(analystWindow.end)}). Instances outside this window
+              are ignored so a partial file isn&apos;t penalised.
             </>
           )}
           {rangeMode === "full" &&
