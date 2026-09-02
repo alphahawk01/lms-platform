@@ -284,6 +284,7 @@ export default function ComparisonPage() {
   const [tolerance, setTolerance] = useState(3);
   const [statusFilter, setStatusFilter] = useState<MatchStatus | "all">("all");
   const [teamFilter, setTeamFilter] = useState<string | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
 
   // Time range. In "auto" mode we restrict the comparison to the section the
   // analyst actually covered (their first→last timestamp), so a partial
@@ -354,18 +355,52 @@ export default function ComparisonPage() {
 
   const rowTeam = (r: ComparisonRow) =>
     r.master?.team ?? r.analyst?.team ?? "Unknown";
+  const rowCategory = (r: ComparisonRow) =>
+    r.master?.category ?? r.analyst?.category ?? "Uncategorised";
 
-  // Rows scoped to the selected team (used for status-filter counts).
+  // Rows scoped to the selected team + category (used for status-filter counts,
+  // the timeline, and the stat breakdown table).
   const teamScopedRows: ComparisonRow[] = useMemo(() => {
     if (!result) return [];
-    if (teamFilter === "all") return result.rows;
-    return result.rows.filter((r) => rowTeam(r) === teamFilter);
-  }, [result, teamFilter]);
+    return result.rows.filter(
+      (r) =>
+        (teamFilter === "all" || rowTeam(r) === teamFilter) &&
+        (categoryFilter === "all" || rowCategory(r) === categoryFilter)
+    );
+  }, [result, teamFilter, categoryFilter]);
 
   const filteredRows: ComparisonRow[] = useMemo(() => {
     if (statusFilter === "all") return teamScopedRows;
     return teamScopedRows.filter((r) => r.status === statusFilter);
   }, [teamScopedRows, statusFilter]);
+
+  // Stat breakdown derived from the team+category-scoped rows so the table
+  // reflects the active filters.
+  const scopedStatBreakdown = useMemo(() => {
+    const map = new Map<string, { total: number; exact: number }>();
+    for (const r of teamScopedRows) {
+      if (!r.master) continue;
+      const stat = r.master.stat || "Uncategorised";
+      const e = map.get(stat) ?? { total: 0, exact: 0 };
+      e.total += 1;
+      if (r.status === "exact") e.exact += 1;
+      map.set(stat, e);
+    }
+    return Array.from(map.entries())
+      .map(([stat, v]) => ({
+        stat,
+        total: v.total,
+        exact: v.exact,
+        accuracy: v.total > 0 ? v.exact / v.total : 0,
+      }))
+      .sort((a, b) => a.stat.localeCompare(b.stat));
+  }, [teamScopedRows]);
+
+  const scopedTotals = useMemo(() => {
+    const total = scopedStatBreakdown.reduce((a, s) => a + s.total, 0);
+    const exact = scopedStatBreakdown.reduce((a, s) => a + s.exact, 0);
+    return { total, exact, accuracy: total > 0 ? exact / total : 0 };
+  }, [scopedStatBreakdown]);
 
   function swap() {
     const m = master;
@@ -598,32 +633,64 @@ export default function ComparisonPage() {
           {/* Category breakdown */}
           {result.byCategory.length > 0 && (
             <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-3 text-sm font-semibold text-slate-700">
-                Accuracy by stat category
-              </h2>
-              <div className="space-y-2.5">
-                {result.byCategory.map((c) => (
-                  <div key={c.category} className="flex items-center gap-3">
-                    <span className="w-32 shrink-0 truncate text-sm text-slate-600">
-                      {c.category}
-                    </span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className={`h-full rounded-full ${
-                          c.accuracy >= 0.9
-                            ? "bg-emerald-500"
-                            : c.accuracy >= 0.75
-                              ? "bg-amber-500"
-                              : "bg-red-500"
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold text-slate-700">
+                  Accuracy by stat category
+                </h2>
+                {categoryFilter !== "all" && (
+                  <button
+                    onClick={() => setCategoryFilter("all")}
+                    className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+                  >
+                    <X size={12} /> Clear filter
+                  </button>
+                )}
+              </div>
+              <p className="mb-3 text-xs text-slate-400">
+                Click a category to filter the breakdown table and timeline.
+              </p>
+              <div className="space-y-1">
+                {result.byCategory.map((c) => {
+                  const active = categoryFilter === c.category;
+                  return (
+                    <button
+                      key={c.category}
+                      onClick={() =>
+                        setCategoryFilter(active ? "all" : c.category)
+                      }
+                      className={`flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition ${
+                        active
+                          ? "bg-pd-red/10 ring-1 ring-pd-red/30"
+                          : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <span
+                        className={`w-32 shrink-0 truncate text-sm ${
+                          active
+                            ? "font-semibold text-pd-red"
+                            : "text-slate-600"
                         }`}
-                        style={{ width: `${c.accuracy * 100}%` }}
-                      />
-                    </div>
-                    <span className="w-24 shrink-0 text-right text-xs text-slate-500">
-                      {(c.accuracy * 100).toFixed(0)}% ({c.exact}/{c.total})
-                    </span>
-                  </div>
-                ))}
+                      >
+                        {c.category}
+                      </span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${
+                            c.accuracy >= 0.9
+                              ? "bg-emerald-500"
+                              : c.accuracy >= 0.75
+                                ? "bg-amber-500"
+                                : "bg-red-500"
+                          }`}
+                          style={{ width: `${c.accuracy * 100}%` }}
+                        />
+                      </div>
+                      <span className="w-24 shrink-0 text-right text-xs text-slate-500">
+                        {(c.accuracy * 100).toFixed(0)}% ({c.exact}/{c.total})
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -634,17 +701,22 @@ export default function ComparisonPage() {
               <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
                 <h2 className="text-sm font-semibold text-slate-700">
                   Statistic breakdown
+                  {categoryFilter !== "all" && (
+                    <span className="ml-2 rounded-md bg-pd-red/10 px-2 py-0.5 text-xs font-semibold text-pd-red">
+                      {categoryFilter}
+                    </span>
+                  )}
                 </h2>
                 <button
-                  onClick={() => exportStatCsv(result.byStat)}
+                  onClick={() => exportStatCsv(scopedStatBreakdown)}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                 >
                   <Download size={13} /> Export CSV
                 </button>
               </div>
-              <div className="overflow-x-auto">
+              <div className="max-h-80 overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       <th className="px-4 py-2.5">Statistic Type</th>
                       <th className="px-4 py-2.5 text-right">Master</th>
@@ -653,7 +725,7 @@ export default function ComparisonPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {result.byStat.map((s) => (
+                    {scopedStatBreakdown.map((s) => (
                       <tr
                         key={s.stat}
                         className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60"
@@ -680,18 +752,28 @@ export default function ComparisonPage() {
                         </td>
                       </tr>
                     ))}
+                    {scopedStatBreakdown.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-6 text-center text-sm text-slate-400"
+                        >
+                          No stats for this filter.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold text-slate-900">
+                  <tfoot className="sticky bottom-0">
+                    <tr className="border-t-2 border-slate-300 bg-slate-100 font-bold text-slate-900">
                       <td className="px-4 py-2.5">Totals</td>
                       <td className="px-4 py-2.5 text-right tabular-nums">
-                        {result.summary.masterTotal}
+                        {scopedTotals.total}
                       </td>
                       <td className="px-4 py-2.5 text-right tabular-nums">
-                        {result.summary.exact}
+                        {scopedTotals.exact}
                       </td>
                       <td className="px-4 py-2.5 text-right tabular-nums">
-                        {(result.summary.accuracy * 100).toFixed(0)}%
+                        {(scopedTotals.accuracy * 100).toFixed(0)}%
                       </td>
                     </tr>
                   </tfoot>
