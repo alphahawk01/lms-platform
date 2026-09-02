@@ -398,3 +398,21 @@ export function formatTime(seconds: number): string {
   const s = Math.floor(seconds % 60);
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
+
+/**
+ * Parse a time input into seconds. Accepts "mm:ss", "h:mm:ss", or a plain
+ * number of seconds. Returns null for empty/invalid input.
+ */
+export function parseTime(input: string): number | null {
+  const t = input.trim();
+  if (!t) return null;
+  if (t.includes(":")) {
+    const parts = t.split(":").map((p) => parseInt(p, 10));
+    if (parts.some((n) => Number.isNaN(n))) return null;
+    let seconds = 0;
+    for (const p of parts) seconds = seconds * 60 + p;
+    return seconds;
+  }
+  const n = parseFloat(t);
+  return Number.isNaN(n) ? null : n;
+}

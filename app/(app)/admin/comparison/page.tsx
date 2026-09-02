@@ -11,11 +11,13 @@ import {
   CheckCircle2,
   Lightbulb,
   ArrowRightLeft,
+  Clock,
 } from "lucide-react";
 import {
   parseInstances,
   compareInstances,
   formatTime,
+  parseTime,
   type Instance,
   type ComparisonRow,
   type MatchStatus,
@@ -259,10 +261,50 @@ export default function ComparisonPage() {
   const [statusFilter, setStatusFilter] = useState<MatchStatus | "all">("all");
   const [teamFilter, setTeamFilter] = useState<string | "all">("all");
 
+  // Time range. In "auto" mode we restrict the comparison to the section the
+  // analyst actually covered (their first→last timestamp), so a partial
+  // analyst file isn't graded against the whole master game.
+  const [rangeMode, setRangeMode] = useState<"auto" | "full" | "manual">(
+    "auto"
+  );
+  const [manualStart, setManualStart] = useState(""); // mm:ss
+  const [manualEnd, setManualEnd] = useState(""); // mm:ss
+
+  // The analyst's naturally-covered window.
+  const analystWindow = useMemo(() => {
+    if (!analyst || analyst.instances.length === 0) return null;
+    const starts = analyst.instances.map((i) => i.start);
+    const ends = analyst.instances.map((i) => i.end);
+    return { start: Math.min(...starts), end: Math.max(...ends) };
+  }, [analyst]);
+
+  // The effective [start, end] window used for the comparison.
+  const effectiveRange = useMemo(() => {
+    if (rangeMode === "full") return { start: -Infinity, end: Infinity };
+    if (rangeMode === "manual") {
+      const s = parseTime(manualStart);
+      const e = parseTime(manualEnd);
+      return {
+        start: s ?? -Infinity,
+        end: e ?? Infinity,
+      };
+    }
+    // auto
+    if (analystWindow)
+      return { start: analystWindow.start, end: analystWindow.end };
+    return { start: -Infinity, end: Infinity };
+  }, [rangeMode, manualStart, manualEnd, analystWindow]);
+
+  const inRange = (i: Instance) =>
+    i.start >= effectiveRange.start && i.start <= effectiveRange.end;
+
   const result = useMemo(() => {
     if (!master || !analyst) return null;
-    return compareInstances(master.instances, analyst.instances, tolerance);
-  }, [master, analyst, tolerance]);
+    const m = master.instances.filter(inRange);
+    const a = analyst.instances.filter(inRange);
+    return compareInstances(m, a, tolerance);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [master, analyst, tolerance, effectiveRange]);
 
   const insights = useMemo(
     () => (result ? generateInsights(result) : []),
@@ -376,6 +418,108 @@ export default function ComparisonPage() {
           Events within this window are matched; the stat still has to agree to
           count as exact.
         </span>
+      </div>
+
+      {/* Time range control */}
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <Clock size={15} /> Time range
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setRangeMode("auto")}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                rangeMode === "auto"
+                  ? "bg-pd-red text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Analyst&apos;s section
+            </button>
+            <button
+              onClick={() => setRangeMode("manual")}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                rangeMode === "manual"
+                  ? "bg-pd-red text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Custom
+            </button>
+            <button
+              onClick={() => setRangeMode("full")}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                rangeMode === "full"
+                  ? "bg-pd-red text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Full game
+            </button>
+          </div>
+
+          {rangeMode === "manual" && (
+            <div className="flex items-center gap-2">
+              <input
+                value={manualStart}
+                onChange={(e) => setManualStart(e.target.value)}
+                placeholder={
+                  analystWindow ? formatTime(analystWindow.start) : "mm:ss"
+                }
+                className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-pd-red"
+              />
+              <span className="text-slate-400">to</span>
+              <input
+                value={manualEnd}
+                onChange={(e) => setManualEnd(e.target.value)}
+                placeholder={
+                  analystWindow ? formatTime(analystWindow.end) : "mm:ss"
+                }
+                className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-pd-red"
+              />
+            </div>
+          )}
+        </div>
+
+        <p className="mt-2.5 text-xs text-slate-500">
+          {rangeMode === "auto" && analystWindow && (
+            <>
+              Comparing only the section the analyst covered:{" "}
+              <span className="font-semibold text-slate-700">
+                {formatTime(analystWindow.start)} –{" "}
+                {formatTime(analystWindow.end)}
+              </span>
+              . Master instances outside this window are ignored so a partial
+              analyst file isn&apos;t penalised.
+            </>
+          )}
+          {rangeMode === "full" &&
+            "Comparing the entire game. A partial analyst file will show many missed events."}
+          {rangeMode === "manual" &&
+            "Enter start and end as mm:ss (or seconds). Leave a box blank for open-ended."}
+        </p>
+
+        {result && master && analyst && (
+          <p className="mt-1 text-xs text-slate-500">
+            In window:{" "}
+            <span className="font-semibold text-slate-700">
+              {master.instances.filter(inRange).length}
+            </span>{" "}
+            master ·{" "}
+            <span className="font-semibold text-slate-700">
+              {analyst.instances.filter(inRange).length}
+            </span>{" "}
+            analyst instances
+            {rangeMode !== "full" && (
+              <>
+                {" "}
+                (of {master.instances.length} / {analyst.instances.length}{" "}
+                total)
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       {!result && (
