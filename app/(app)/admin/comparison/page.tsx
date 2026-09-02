@@ -344,13 +344,32 @@ export default function ComparisonPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [master, analyst, tolerance, effectiveRange]);
 
+  // A comparison result scoped to the active team + category filters, so the
+  // insights/recommendations describe exactly what the user is looking at.
+  // When "Both teams" and "all categories" are selected this equals `result`.
+  const scopedResult = useMemo(() => {
+    if (!master || !analyst) return null;
+    const matchTeam = (i: Instance) =>
+      teamFilter === "all" || i.team === teamFilter;
+    const matchCat = (i: Instance) =>
+      categoryFilter === "all" || i.category === categoryFilter;
+    const m = master.instances.filter(
+      (i) => inRange(i) && matchTeam(i) && matchCat(i)
+    );
+    const a = analyst.instances.filter(
+      (i) => inRange(i) && matchTeam(i) && matchCat(i)
+    );
+    return compareInstances(m, a, tolerance);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [master, analyst, tolerance, effectiveRange, teamFilter, categoryFilter]);
+
   const insights = useMemo(
-    () => (result ? generateInsights(result) : []),
-    [result]
+    () => (scopedResult ? generateInsights(scopedResult) : []),
+    [scopedResult]
   );
   const recommendations = useMemo(
-    () => (result ? generateRecommendations(result) : []),
-    [result]
+    () => (scopedResult ? generateRecommendations(scopedResult) : []),
+    [scopedResult]
   );
 
   const rowTeam = (r: ComparisonRow) =>
@@ -799,11 +818,15 @@ export default function ComparisonPage() {
           {/* AI insights */}
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-3 flex items-center gap-2">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Sparkles size={18} className="text-pd-red" />
                 <h2 className="text-sm font-semibold text-slate-700">
                   AI insights
                 </h2>
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                  {teamFilter === "all" ? "Both teams" : teamFilter}
+                  {categoryFilter !== "all" ? ` · ${categoryFilter}` : ""}
+                </span>
               </div>
               <div className="space-y-2.5">
                 {insights.map((ins, i) => {
