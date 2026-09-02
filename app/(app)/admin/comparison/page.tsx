@@ -627,8 +627,58 @@ export default function ComparisonPage() {
 
       {result && (
         <>
+          {/* Settings summary — makes it obvious what's being compared, so two
+              runs on different settings are easy to spot. */}
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-600">
+            <span>
+              <span className="text-slate-400">Master:</span>{" "}
+              <span className="font-semibold text-slate-800">
+                {master?.name}
+              </span>
+            </span>
+            <span>
+              <span className="text-slate-400">Analyst:</span>{" "}
+              <span className="font-semibold text-slate-800">
+                {analyst?.name}
+              </span>
+            </span>
+            <span>
+              <span className="text-slate-400">Tolerance:</span>{" "}
+              <span className="font-semibold text-slate-800">±{tolerance}s</span>
+            </span>
+            <span>
+              <span className="text-slate-400">Range:</span>{" "}
+              <span className="font-semibold text-slate-800">
+                {rangeMode === "auto"
+                  ? "Overlapping section"
+                  : rangeMode === "manual"
+                    ? "Custom"
+                    : "Full game"}
+                {effectiveRange.start > -Infinity ||
+                effectiveRange.end < Infinity
+                  ? ` · ${
+                      effectiveRange.start > -Infinity
+                        ? effectiveRange.start.toFixed(0)
+                        : "start"
+                    }–${
+                      effectiveRange.end < Infinity
+                        ? effectiveRange.end.toFixed(0)
+                        : "end"
+                    }s`
+                  : ""}
+              </span>
+            </span>
+            <span>
+              <span className="text-slate-400">In window:</span>{" "}
+              <span className="font-semibold text-slate-800">
+                {master?.instances.filter(inRange).length} master /{" "}
+                {analyst?.instances.filter(inRange).length} analyst
+              </span>
+            </span>
+          </div>
+
           {/* Summary cards */}
-          <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
             <StatCard
               label="Accuracy"
               value={`${(result.summary.accuracy * 100).toFixed(1)}%`}
