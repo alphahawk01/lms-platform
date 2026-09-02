@@ -193,51 +193,77 @@ export function compareInstances(
 ): ComparisonResult {
   const rows: ComparisonRow[] = [];
   const usedAnalyst = new Set<number>();
+  const usedMaster = new Set<number>();
 
-  const scoreMatch = (m: Instance, a: Instance): number => {
-    let s = 0;
-    if (normTeam(m.team) === normTeam(a.team)) s += 4;
-    if (
-      m.playerNumber != null &&
-      a.playerNumber != null &&
-      m.playerNumber === a.playerNumber
-    )
-      s += 2;
-    if (normStat(m.stat) === normStat(a.stat)) s += 1;
-    return s;
-  };
-
-  for (const m of master) {
-    let bestIdx = -1;
-    let bestScore = -1;
-    let bestDelta = Infinity;
-
-    for (let i = 0; i < analyst.length; i++) {
-      if (usedAnalyst.has(i)) continue;
-      const a = analyst[i];
-      const delta = Math.abs(a.start - m.start);
-      if (delta > tolerance) continue;
-      const score = scoreMatch(m, a);
-      if (score > bestScore || (score === bestScore && delta < bestDelta)) {
-        bestScore = score;
-        bestDelta = delta;
-        bestIdx = i;
-      }
-    }
-
-    if (bestIdx === -1) {
-      rows.push({ status: "missed", master: m, analyst: null, timeDelta: null });
-      continue;
-    }
-
-    usedAnalyst.add(bestIdx);
-    const a = analyst[bestIdx];
+  const fieldsOk = (m: Instance, a: Instance) => {
     const teamOk = normTeam(m.team) === normTeam(a.team);
     const playerOk =
       m.playerNumber != null &&
       a.playerNumber != null &&
       m.playerNumber === a.playerNumber;
     const statOk = normStat(m.stat) === normStat(a.stat);
+    return { teamOk, playerOk, statOk };
+  };
+
+  // Match-quality tier (higher = better). The key change: player + stat
+  // agreement matters far more than team alone, so a same-team-but-otherwise-
+  // wrong pair can't steal an analyst instance from a genuine match.
+  //   4 = exact (team + player + stat)
+  //   3 = player + stat (wrong/!team)
+  //   2 = player + team (wrong stat)  OR  stat + team (wrong player)
+  //   1 = only one field agrees
+  //   0 = nothing agrees (still matchable within the time window, but lowest)
+  const quality = (m: Instance, a: Instance): number => {
+    const { teamOk, playerOk, statOk } = fieldsOk(m, a);
+    if (teamOk && playerOk && statOk) return 4;
+    if (playerOk && statOk) return 3;
+    if ((playerOk && teamOk) || (statOk && teamOk)) return 2;
+    if (teamOk || playerOk || statOk) return 1;
+    return 0;
+  };
+
+  // Build every candidate pair within the time tolerance, then assign the
+  // best pairs first (global greedy). This avoids the master-order greedy
+  // bug where an early weak match consumes an analyst row a later master
+  // row needed.
+  type Candidate = {
+    mi: number;
+    ai: number;
+    q: number;
+    delta: number;
+  };
+  const candidates: Candidate[] = [];
+  for (let mi = 0; mi < master.length; mi++) {
+    const m = master[mi];
+    for (let ai = 0; ai < analyst.length; ai++) {
+      const a = analyst[ai];
+      const delta = Math.abs(a.start - m.start);
+      if (delta > tolerance) continue;
+      candidates.push({ mi, ai, q: quality(m, a), delta });
+    }
+  }
+
+  // Best first: higher quality wins; ties broken by smaller time delta.
+  candidates.sort((x, y) => (y.q - x.q) || (x.delta - y.delta));
+
+  const matchByMaster = new Map<number, { ai: number; delta: number }>();
+  for (const c of candidates) {
+    if (usedMaster.has(c.mi) || usedAnalyst.has(c.ai)) continue;
+    usedMaster.add(c.mi);
+    usedAnalyst.add(c.ai);
+    matchByMaster.set(c.mi, { ai: c.ai, delta: c.delta });
+  }
+
+  // Emit a row for every master instance.
+  for (let mi = 0; mi < master.length; mi++) {
+    const m = master[mi];
+    const match = matchByMaster.get(mi);
+    if (!match) {
+      rows.push({ status: "missed", master: m, analyst: null, timeDelta: null });
+      continue;
+    }
+    const a = analyst[match.ai];
+    const { teamOk, playerOk, statOk } = fieldsOk(m, a);
 
     let status: MatchStatus;
     if (!teamOk) status = "wrong_team";
@@ -245,7 +271,7 @@ export function compareInstances(
     else if (!statOk) status = "wrong_stat";
     else status = "exact";
 
-    rows.push({ status, master: m, analyst: a, timeDelta: bestDelta });
+    rows.push({ status, master: m, analyst: a, timeDelta: match.delta });
   }
 
   // Any analyst instance never consumed is an "extra" (false positive).
