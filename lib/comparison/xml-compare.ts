@@ -247,18 +247,25 @@ export function compareInstances(
   // Match-quality tier (higher = better). The key change: player + stat
   // agreement matters far more than team alone, so a same-team-but-otherwise-
   // wrong pair can't steal an analyst instance from a genuine match.
-  //   4 = exact (team + player + stat)
-  //   3 = player + stat (wrong/!team)
-  //   2 = player + team (wrong stat)  OR  stat + team (wrong player)
-  //   1 = only one field agrees
-  //   0 = nothing agrees (still matchable within the time window, but lowest)
+  //   5 = exact (team + player + stat)
+  //   4 = stat + player, wrong team   (same action & player, opposing team)
+  //   3 = stat + team,   wrong player (same action, right team, wrong #)
+  //   2 = stat only,     wrong team & player (same action, opposing team)
+  //   1 = player + team, wrong stat   (same player, different action)
+  //   0 = not a plausible match (neither stat nor player agree)
+  //
+  // A pair is only eligible to match if the STAT matches OR the PLAYER matches.
+  // Sharing only the team (e.g. Loose Ball Get vs Ineffective Kick, same team)
+  // is NOT the same event, so those aren't paired — the master is "missed" and
+  // the analyst is "extra".
   const quality = (m: Instance, a: Instance): number => {
     const { teamOk, playerOk, statOk } = fieldsOk(m, a);
-    if (teamOk && playerOk && statOk) return 4;
-    if (playerOk && statOk) return 3;
-    if ((playerOk && teamOk) || (statOk && teamOk)) return 2;
-    if (teamOk || playerOk || statOk) return 1;
-    return 0;
+    if (statOk && playerOk && teamOk) return 5;
+    if (statOk && playerOk) return 4;
+    if (statOk && teamOk) return 3;
+    if (statOk) return 2;
+    if (playerOk && teamOk) return 1;
+    return 0; // ineligible
   };
 
   // Build every candidate pair within the time tolerance, then assign the
@@ -278,7 +285,9 @@ export function compareInstances(
       const a = analyst[ai];
       const delta = Math.abs(a.start - m.start);
       if (delta > tolerance) continue;
-      candidates.push({ mi, ai, q: quality(m, a), delta });
+      const q = quality(m, a);
+      if (q === 0) continue; // not a plausible match — skip
+      candidates.push({ mi, ai, q, delta });
     }
   }
 
@@ -304,11 +313,20 @@ export function compareInstances(
     const a = analyst[match.ai];
     const { teamOk, playerOk, statOk } = fieldsOk(m, a);
 
+    // Matched pairs always share stat or player (see quality()).
     let status: MatchStatus;
-    if (!teamOk) status = "wrong_team";
-    else if (!playerOk) status = "wrong_player";
-    else if (!statOk) status = "wrong_stat";
-    else status = "exact";
+    if (statOk && playerOk && teamOk) {
+      status = "exact";
+    } else if (statOk && !teamOk) {
+      // Same action credited to the opposing team = wrong team.
+      status = "wrong_team";
+    } else if (statOk && teamOk && !playerOk) {
+      // Same action, right team, wrong jersey number.
+      status = "wrong_player";
+    } else {
+      // Player matches (and team), but the stat/action differs.
+      status = "wrong_stat";
+    }
 
     rows.push({ status, master: m, analyst: a, timeDelta: match.delta });
   }
