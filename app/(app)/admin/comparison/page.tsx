@@ -465,19 +465,20 @@ export default function ComparisonPage() {
                 value={manualStart}
                 onChange={(e) => setManualStart(e.target.value)}
                 placeholder={
-                  analystWindow ? formatTime(analystWindow.start) : "mm:ss"
+                  analystWindow ? analystWindow.start.toFixed(2) : "e.g. 2082"
                 }
-                className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-pd-red"
+                className="w-28 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-pd-red"
               />
               <span className="text-slate-400">to</span>
               <input
                 value={manualEnd}
                 onChange={(e) => setManualEnd(e.target.value)}
                 placeholder={
-                  analystWindow ? formatTime(analystWindow.end) : "mm:ss"
+                  analystWindow ? analystWindow.end.toFixed(2) : "e.g. 3976"
                 }
-                className="w-24 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-pd-red"
+                className="w-28 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-pd-red"
               />
+              <span className="text-xs text-slate-400">seconds</span>
             </div>
           )}
         </div>
@@ -487,17 +488,18 @@ export default function ComparisonPage() {
             <>
               Comparing only the section the analyst covered:{" "}
               <span className="font-semibold text-slate-700">
-                {formatTime(analystWindow.start)} –{" "}
-                {formatTime(analystWindow.end)}
-              </span>
-              . Master instances outside this window are ignored so a partial
-              analyst file isn&apos;t penalised.
+                {analystWindow.start.toFixed(2)} –{" "}
+                {analystWindow.end.toFixed(2)}s
+              </span>{" "}
+              ({formatTime(analystWindow.start)} –{" "}
+              {formatTime(analystWindow.end)}). Master instances outside this
+              window are ignored so a partial analyst file isn&apos;t penalised.
             </>
           )}
           {rangeMode === "full" &&
             "Comparing the entire game. A partial analyst file will show many missed events."}
           {rangeMode === "manual" &&
-            "Enter start and end as mm:ss (or seconds). Leave a box blank for open-ended."}
+            "Enter start and end in seconds (matching the XML, e.g. 2082 – 3976). Leave a box blank for open-ended."}
         </p>
 
         {result && master && analyst && (
