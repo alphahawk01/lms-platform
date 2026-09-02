@@ -969,7 +969,7 @@ export default function ComparisonPage() {
           </div>
 
           {/* Team filter */}
-          {realTeams.length > 1 && (
+          {realTeams.length >= 1 && (
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Team
