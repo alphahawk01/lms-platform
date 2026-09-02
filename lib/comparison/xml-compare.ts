@@ -192,6 +192,29 @@ function normStat(s: string): string {
 }
 
 /**
+ * Game-flow "events" (centre bounces, around-the-ground bounces, throw-ins)
+ * aren't attributed to a specific player/team. If both files log the same
+ * event in the same time window, that's a correct match regardless of the
+ * player or team recorded against it.
+ */
+const EVENT_STAT_KEYWORDS = [
+  "centre bounce",
+  "center bounce",
+  "ball up", // around-the-ground bounce is often coded as a ball-up
+  "around ground bounce",
+  "around the ground bounce",
+  "ground bounce",
+  "bounce", // catch-all for bounce variants
+  "throw in",
+  "throw-in",
+];
+
+function isEventStat(stat: string): boolean {
+  const s = normStat(stat);
+  return EVENT_STAT_KEYWORDS.some((k) => s.includes(k));
+}
+
+/**
  * Compare master vs analyst instances.
  * Matching: for each master instance, find the best analyst instance whose
  * start time is within `tolerance` seconds that hasn't been consumed yet.
@@ -207,13 +230,18 @@ export function compareInstances(
   const usedMaster = new Set<number>();
 
   const fieldsOk = (m: Instance, a: Instance) => {
+    const statOk = normStat(m.stat) === normStat(a.stat);
+    // Game-flow events aren't tied to a player/team. When the stat matches and
+    // it's an event, team/player don't apply, so treat them as agreeing.
+    if (statOk && isEventStat(m.stat)) {
+      return { teamOk: true, playerOk: true, statOk: true, event: true };
+    }
     const teamOk = normTeam(m.team) === normTeam(a.team);
     const playerOk =
       m.playerNumber != null &&
       a.playerNumber != null &&
       m.playerNumber === a.playerNumber;
-    const statOk = normStat(m.stat) === normStat(a.stat);
-    return { teamOk, playerOk, statOk };
+    return { teamOk, playerOk, statOk, event: false };
   };
 
   // Match-quality tier (higher = better). The key change: player + stat
