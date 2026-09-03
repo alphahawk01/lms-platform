@@ -8,6 +8,7 @@ import {
   Loader2,
   Settings,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { ImageUpload } from "@/components/image-upload";
 import { VideoUpload } from "@/components/video-upload";
@@ -17,6 +18,7 @@ type Option = {
   content: string;
   is_correct: boolean;
   position: number;
+  image_url?: string | null;
 };
 
 type Question = {
@@ -145,6 +147,7 @@ export function QuizEditor({ lessonId, lessonTitle }: QuizEditorProps) {
           options: question.quiz_options.map((o) => ({
             content: o.content,
             is_correct: o.is_correct,
+            image_url: o.image_url ?? null,
           })),
         }),
       });
@@ -457,10 +460,13 @@ function QuestionForm({
   saving: boolean;
 }) {
   const [q, setQ] = useState<Question>(question);
+  // Which option's image uploader is currently open (null = none).
+  const [imageOptionIdx, setImageOptionIdx] = useState<number | null>(null);
 
   // Sync if the parent provides a new question (after save returns updated data)
   useEffect(() => {
     setQ(question);
+    setImageOptionIdx(null);
   }, [question]);
 
   function updateOption(idx: number, updates: Partial<Option>) {
@@ -596,44 +602,100 @@ function QuestionForm({
               </span>
             </label>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {q.quiz_options.map((opt, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-2"
+                  className="rounded-xl border border-slate-200 bg-slate-50/60 p-2.5"
                 >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateOption(idx, { is_correct: !opt.is_correct })
-                    }
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
-                      opt.is_correct
-                        ? "border-green-600 bg-green-600 text-white"
-                        : "border-slate-300 hover:border-slate-400"
-                    }`}
-                  >
-                    {opt.is_correct && <Check size={14} />}
-                  </button>
-
-                  <input
-                    type="text"
-                    value={opt.content}
-                    onChange={(e) =>
-                      updateOption(idx, { content: e.target.value })
-                    }
-                    placeholder={`Option ${idx + 1}`}
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-pd-red"
-                  />
-
-                  {q.quiz_options.length > 2 && (
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => removeOption(idx)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                      onClick={() =>
+                        updateOption(idx, { is_correct: !opt.is_correct })
+                      }
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
+                        opt.is_correct
+                          ? "border-green-600 bg-green-600 text-white"
+                          : "border-slate-300 hover:border-slate-400"
+                      }`}
                     >
-                      <X size={14} />
+                      {opt.is_correct && <Check size={14} />}
                     </button>
+
+                    <input
+                      type="text"
+                      value={opt.content}
+                      onChange={(e) =>
+                        updateOption(idx, { content: e.target.value })
+                      }
+                      placeholder={`Option ${idx + 1}`}
+                      className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-pd-red"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setImageOptionIdx(imageOptionIdx === idx ? null : idx)
+                      }
+                      title={opt.image_url ? "Edit image" : "Add image"}
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${
+                        opt.image_url || imageOptionIdx === idx
+                          ? "border-pd-red bg-pd-red/10 text-pd-red"
+                          : "border-slate-300 text-slate-500 hover:border-slate-400 hover:bg-white"
+                      }`}
+                    >
+                      <ImageIcon size={15} />
+                    </button>
+
+                    {q.quiz_options.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => removeOption(idx)}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Image thumbnail (when set and not editing) */}
+                  {opt.image_url && imageOptionIdx !== idx && (
+                    <div className="mt-2 flex items-center gap-2 pl-8">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={opt.image_url}
+                        alt={`Option ${idx + 1}`}
+                        className="h-14 w-14 rounded-lg border border-slate-200 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateOption(idx, { image_url: null })}
+                        className="text-xs font-medium text-slate-500 hover:text-red-600"
+                      >
+                        Remove image
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Inline image uploader (when this option is being edited) */}
+                  {imageOptionIdx === idx && (
+                    <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3">
+                      <ImageUpload
+                        value={opt.image_url ?? ""}
+                        onChange={(url) =>
+                          updateOption(idx, { image_url: url || null })
+                        }
+                        lessonId={q.lesson_id}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setImageOptionIdx(null)}
+                        className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-700"
+                      >
+                        Done
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}

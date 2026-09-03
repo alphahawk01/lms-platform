@@ -20,6 +20,7 @@ type Option = {
   content: string;
   is_correct: boolean;
   position: number;
+  image_url?: string | null;
 };
 
 type Question = {
@@ -589,14 +590,14 @@ export function QuizTaker({
                       key={opt.id}
                       type="button"
                       onClick={() => selectOption(opt.id)}
-                      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition ${
+                      className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition ${
                         selected
                           ? "border-pd-red bg-pd-red/5 font-medium text-pd-red"
                           : "border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                     >
                       <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
                           selected
                             ? "border-pd-red bg-pd-red"
                             : "border-slate-300"
@@ -606,7 +607,17 @@ export function QuizTaker({
                           <span className="h-2 w-2 rounded-full bg-white" />
                         )}
                       </span>
-                      {opt.content}
+                      <span className="flex-1">
+                        {opt.image_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={opt.image_url}
+                            alt={opt.content || "Answer option"}
+                            className="mb-2 max-h-48 w-full rounded-lg object-contain"
+                          />
+                        )}
+                        {opt.content && <span>{opt.content}</span>}
+                      </span>
                     </button>
                   );
                 })}
@@ -694,8 +705,16 @@ export function QuizTaker({
                         key={o.id}
                         className="flex items-center gap-2 text-sm font-medium text-green-700"
                       >
-                        <CheckCircle2 size={16} />
-                        {o.content}
+                        <CheckCircle2 size={16} className="shrink-0" />
+                        {o.image_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={o.image_url}
+                            alt={o.content || "Correct answer"}
+                            className="h-12 w-12 rounded-lg border border-green-200 object-cover"
+                          />
+                        )}
+                        {o.content && <span>{o.content}</span>}
                       </div>
                     ))}
                 </div>

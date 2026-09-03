@@ -203,13 +203,18 @@ export async function POST(request: Request) {
     if (options.length > 0) {
       const rows = options.map(
         (
-          opt: { content: string; is_correct: boolean },
+          opt: {
+            content: string;
+            is_correct: boolean;
+            image_url?: string | null;
+          },
           idx: number
         ) => ({
           question_id: questionId,
           position: idx,
           content: opt.content ?? "",
           is_correct: opt.is_correct ?? false,
+          image_url: opt.image_url || null,
         })
       );
 
