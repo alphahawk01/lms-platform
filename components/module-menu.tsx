@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   MoreHorizontal,
@@ -29,6 +30,13 @@ export function ModuleMenu({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
+    null
+  );
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [editing, setEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
@@ -36,9 +44,25 @@ export function ModuleMenu({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [working, setWorking] = useState(false);
 
+  function openMenu() {
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (rect) {
+      setMenuPos({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    setMenuOpen(true);
+  }
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        btnRef.current &&
+        !btnRef.current.contains(e.target as Node)
+      ) {
         setMenuOpen(false);
       }
     }
@@ -82,10 +106,11 @@ export function ModuleMenu({
   }
 
   return (
-    <div ref={menuRef} className="relative">
+    <>
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setMenuOpen((o) => !o)}
+        onClick={() => (menuOpen ? setMenuOpen(false) : openMenu())}
         className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
         title="Module options"
       >
@@ -96,43 +121,53 @@ export function ModuleMenu({
         )}
       </button>
 
-      {menuOpen && (
-        <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-          <button
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              setNewTitle(title);
-              setNewDescription(description ?? "");
-              setEditing(true);
-            }}
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+      {mounted &&
+        menuOpen &&
+        menuPos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ top: menuPos.top, right: menuPos.right }}
+            className="fixed z-[60] w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
           >
-            <Pencil size={15} />
-            Edit / rename
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              setConfirmDelete(true);
-            }}
-            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
-          >
-            <Trash2 size={15} />
-            Delete
-          </button>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setNewTitle(title);
+                setNewDescription(description ?? "");
+                setEditing(true);
+              }}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
+            >
+              <Pencil size={15} />
+              Edit / rename
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setConfirmDelete(true);
+              }}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
+            >
+              <Trash2 size={15} />
+              Delete
+            </button>
+          </div>,
+          document.body
+        )}
 
       {/* Edit modal */}
-      {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">
-                Edit module
-              </h2>
+      {mounted &&
+        editing &&
+        createPortal(
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Edit module
+                </h2>
               <button
                 onClick={() => setEditing(false)}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
@@ -179,42 +214,46 @@ export function ModuleMenu({
                 Save
               </button>
             </div>
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Delete confirmation */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Delete module?
-            </h2>
-            <p className="mt-3 text-sm text-slate-500">
-              This permanently deletes{" "}
-              <span className="font-medium text-slate-700">{title}</span> and
-              all lessons and quizzes inside it. This cannot be undone.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={working}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {working && <Loader2 size={16} className="animate-spin" />}
-                <Trash2 size={16} />
-                Delete
-              </button>
+      {mounted &&
+        confirmDelete &&
+        createPortal(
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Delete module?
+              </h2>
+              <p className="mt-3 text-sm text-slate-500">
+                This permanently deletes{" "}
+                <span className="font-medium text-slate-700">{title}</span> and
+                all lessons and quizzes inside it. This cannot be undone.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={working}
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {working && <Loader2 size={16} className="animate-spin" />}
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
