@@ -14,6 +14,8 @@ import { AddModuleForm } from "@/components/add-module-form";
 import { AddLessonForm } from "@/components/add-lesson-form";
 import { CoursePublishButton } from "@/components/course-publish-button";
 import { EditCourseDetails } from "@/components/edit-course-details";
+import { ModuleMenu } from "@/components/module-menu";
+import { LessonMenu } from "@/components/lesson-menu";
 
 type CourseEditorPageProps = {
   params: Promise<{
@@ -222,7 +224,15 @@ export default async function CourseEditorPage({
                     </div>
                   </div>
 
-                  <AddLessonForm moduleId={module.id} />
+                  <div className="flex items-center gap-2">
+                    <AddLessonForm moduleId={module.id} />
+                    <ModuleMenu
+                      moduleId={module.id}
+                      courseId={course.id}
+                      title={module.title}
+                      description={module.description}
+                    />
+                  </div>
                 </div>
 
                 {/* Lessons */}
@@ -250,6 +260,12 @@ export default async function CourseEditorPage({
                           <span className="ml-auto rounded-full bg-white px-3 py-1 text-xs capitalize text-slate-400">
                             {lesson.lesson_type}
                           </span>
+
+                          <LessonMenu
+                            lessonId={lesson.id}
+                            courseId={course.id}
+                            title={lesson.title}
+                          />
                         </Link>
                       ))}
                     </div>
