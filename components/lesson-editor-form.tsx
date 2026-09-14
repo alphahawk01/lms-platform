@@ -14,6 +14,7 @@ import {
   FileText,
   ChevronUp,
   ChevronDown,
+  GripVertical,
 } from "lucide-react";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { createClient } from "@/lib/supabase/client";
@@ -82,6 +83,22 @@ export function LessonEditorForm({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Drag-to-reorder pages
+  const [dragPageId, setDragPageId] = useState<string | null>(null);
+
+  function reorderPages(fromId: string, toId: string) {
+    if (fromId === toId) return;
+    setPages((current) => {
+      const list = [...current];
+      const from = list.findIndex((p) => p.id === fromId);
+      const to = list.findIndex((p) => p.id === toId);
+      if (from === -1 || to === -1) return current;
+      const [moved] = list.splice(from, 1);
+      list.splice(to, 0, moved);
+      return list.map((p, i) => ({ ...p, position: i }));
+    });
+  }
 
   function addPage() {
     const newPage: LessonPage = {
@@ -515,12 +532,30 @@ export function LessonEditorForm({
                   (page, index) => (
                     <div
                       key={page.id}
-                      className={`group flex items-center gap-2 rounded-xl ${selectedPageId ===
-                        page.id
-                        ? "bg-slate-100"
-                        : "hover:bg-slate-50"
-                        }`}
+                      onDragOver={(e) => {
+                        if (dragPageId) e.preventDefault();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragPageId) reorderPages(dragPageId, page.id);
+                        setDragPageId(null);
+                      }}
+                      className={`group flex items-center gap-1 rounded-xl transition ${
+                        selectedPageId === page.id
+                          ? "bg-slate-100"
+                          : "hover:bg-slate-50"
+                      } ${dragPageId === page.id ? "opacity-40" : ""}`}
                     >
+                      <span
+                        draggable
+                        onDragStart={() => setDragPageId(page.id)}
+                        onDragEnd={() => setDragPageId(null)}
+                        className="cursor-grab pl-2 text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+                        title="Drag to reorder"
+                      >
+                        <GripVertical size={15} />
+                      </span>
+
                       <button
                         type="button"
                         onClick={() =>
@@ -528,7 +563,7 @@ export function LessonEditorForm({
                             page.id
                           )
                         }
-                        className="flex flex-1 items-center gap-3 px-3 py-3 text-left"
+                        className="flex flex-1 items-center gap-3 px-2 py-3 text-left"
                       >
                         <FileText
                           size={17}

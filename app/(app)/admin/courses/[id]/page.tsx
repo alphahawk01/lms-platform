@@ -1,13 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  ArrowLeft,
-  BookOpen,
-  FileText,
-  Video,
-  HelpCircle,
-  ClipboardCheck,
-} from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { AddModuleForm } from "@/components/add-module-form";
@@ -15,7 +8,7 @@ import { AddLessonForm } from "@/components/add-lesson-form";
 import { CoursePublishButton } from "@/components/course-publish-button";
 import { EditCourseDetails } from "@/components/edit-course-details";
 import { ModuleMenu } from "@/components/module-menu";
-import { LessonMenu } from "@/components/lesson-menu";
+import { ModuleLessons } from "@/components/module-lessons";
 
 type CourseEditorPageProps = {
   params: Promise<{
@@ -237,39 +230,10 @@ export default async function CourseEditorPage({
 
                 {/* Lessons */}
                 <div className="border-t border-slate-200 bg-slate-50">
-                  {moduleLessons.length === 0 ? (
-                    <div className="px-6 py-5 text-sm text-slate-400">
-                      No lessons yet. Add your first lesson.
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-200">
-                      {moduleLessons.map((lesson: Lesson) => (
-                        <Link
-                          key={lesson.id}
-                          href={`/admin/courses/${id}/lessons/${lesson.id}`}
-                          className="flex items-center gap-4 px-6 py-4 transition hover:bg-white"
-                        >
-                          <LessonIcon
-                            type={lesson.lesson_type}
-                          />
-
-                          <span className="font-medium text-slate-700">
-                            {lesson.title}
-                          </span>
-
-                          <span className="ml-auto rounded-full bg-white px-3 py-1 text-xs capitalize text-slate-400">
-                            {lesson.lesson_type}
-                          </span>
-
-                          <LessonMenu
-                            lessonId={lesson.id}
-                            courseId={course.id}
-                            title={lesson.title}
-                          />
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  <ModuleLessons
+                    courseId={course.id}
+                    lessons={moduleLessons}
+                  />
                 </div>
               </div>
             );
@@ -278,31 +242,4 @@ export default async function CourseEditorPage({
       )}
     </div>
   );
-}
-
-function LessonIcon({
-  type,
-}: {
-  type: string;
-}) {
-  const className = "text-slate-400";
-
-  if (type === "video") {
-    return <Video size={19} className={className} />;
-  }
-
-  if (type === "quiz") {
-    return <HelpCircle size={19} className={className} />;
-  }
-
-  if (type === "assessment") {
-    return (
-      <ClipboardCheck
-        size={19}
-        className={className}
-      />
-    );
-  }
-
-  return <FileText size={19} className={className} />;
 }
