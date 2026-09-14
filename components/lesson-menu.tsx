@@ -19,9 +19,11 @@ export function LessonMenu({ lessonId, courseId, title }: LessonMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
-    null
-  );
+  const [menuPos, setMenuPos] = useState<{
+    top?: number;
+    bottom?: number;
+    right: number;
+  } | null>(null);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -41,10 +43,14 @@ export function LessonMenu({ lessonId, courseId, title }: LessonMenuProps) {
     stop(e);
     const rect = btnRef.current?.getBoundingClientRect();
     if (rect) {
-      setMenuPos({
-        top: rect.bottom + 4,
-        right: window.innerWidth - rect.right,
-      });
+      const menuHeight = 96; // ~2 items
+      const right = window.innerWidth - rect.right;
+      // Flip up if there isn't enough room below the button.
+      if (window.innerHeight - rect.bottom < menuHeight + 12) {
+        setMenuPos({ bottom: window.innerHeight - rect.top + 4, right });
+      } else {
+        setMenuPos({ top: rect.bottom + 4, right });
+      }
     }
     setMenuOpen(true);
   }
@@ -116,7 +122,11 @@ export function LessonMenu({ lessonId, courseId, title }: LessonMenuProps) {
         createPortal(
           <div
             ref={menuRef}
-            style={{ top: menuPos.top, right: menuPos.right }}
+            style={{
+              top: menuPos.top,
+              bottom: menuPos.bottom,
+              right: menuPos.right,
+            }}
             className="fixed z-[60] w-40 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
           >
             <button
