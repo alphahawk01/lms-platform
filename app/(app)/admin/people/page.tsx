@@ -35,6 +35,14 @@ export default function PeoplePage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
+  // Sort & filter controls
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<
+    "name" | "email" | "role" | "status" | "last_sign_in" | "created"
+  >("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
   // Invite modal state
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -273,11 +281,45 @@ export default function PeoplePage() {
     }
   }
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = users
+    .filter(
+      (u) =>
+        (u.full_name.toLowerCase().includes(search.toLowerCase()) ||
+          u.email.toLowerCase().includes(search.toLowerCase())) &&
+        (roleFilter === "all" || u.role === roleFilter) &&
+        (statusFilter === "all" || u.status === statusFilter)
+    )
+    .sort((a, b) => {
+      const dir = sortDir === "asc" ? 1 : -1;
+      switch (sortBy) {
+        case "email":
+          return a.email.localeCompare(b.email) * dir;
+        case "role":
+          return a.role.localeCompare(b.role) * dir;
+        case "status":
+          return a.status.localeCompare(b.status) * dir;
+        case "last_sign_in": {
+          const av = a.last_sign_in_at
+            ? new Date(a.last_sign_in_at).getTime()
+            : 0;
+          const bv = b.last_sign_in_at
+            ? new Date(b.last_sign_in_at).getTime()
+            : 0;
+          return (av - bv) * dir;
+        }
+        case "created":
+          return (
+            (new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime()) *
+            dir
+          );
+        case "name":
+        default:
+          return (a.full_name || a.email).localeCompare(
+            b.full_name || b.email
+          ) * dir;
+      }
+    });
 
   if (loading) {
     return (
@@ -336,9 +378,9 @@ export default function PeoplePage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-5">
-        <div className="relative max-w-sm">
+      {/* Search + filters */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1 min-w-[200px]">
           <Search
             size={18}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -351,12 +393,61 @@ export default function PeoplePage() {
             className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-pd-red"
           />
         </div>
+
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="cursor-pointer rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-pd-red"
+          title="Filter by role"
+        >
+          <option value="all">All roles</option>
+          <option value="learner">Learner</option>
+          <option value="admin">Admin</option>
+          <option value="super_admin">Super Admin</option>
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="cursor-pointer rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-pd-red"
+          title="Filter by status"
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="invited">Invited</option>
+          <option value="archived">Archived</option>
+        </select>
+
+        <select
+          value={sortBy}
+          onChange={(e) =>
+            setSortBy(e.target.value as typeof sortBy)
+          }
+          className="cursor-pointer rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-pd-red"
+          title="Sort by"
+        >
+          <option value="name">Sort: Name</option>
+          <option value="email">Sort: Email</option>
+          <option value="role">Sort: Role</option>
+          <option value="status">Sort: Status</option>
+          <option value="last_sign_in">Sort: Last sign in</option>
+          <option value="created">Sort: Date added</option>
+        </select>
+
+        <button
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          title={sortDir === "asc" ? "Ascending" : "Descending"}
+        >
+          {sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
+        </button>
       </div>
 
-      {/* Users table */}
+      {/* Users table (scrolls ~10 rows) */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="max-h-[560px] overflow-y-auto">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50">
+          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
             <tr>
               <th className="px-6 py-3.5 font-semibold text-slate-700">Name</th>
               <th className="px-6 py-3.5 font-semibold text-slate-700">Email</th>
@@ -453,12 +544,12 @@ export default function PeoplePage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <p className="mt-3 text-right text-xs text-slate-400">
-        {search
-          ? `Showing ${filteredUsers.length} of ${users.length}`
-          : `${users.length} user${users.length !== 1 ? "s" : ""} total`}
+        Showing {filteredUsers.length} of {users.length} user
+        {users.length !== 1 ? "s" : ""}
       </p>
 
       {/* Invite modal */}

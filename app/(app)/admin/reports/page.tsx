@@ -10,6 +10,7 @@ import {
   Award,
   AlertCircle,
 } from "lucide-react";
+import { UserProgressTable } from "@/components/user-progress-table";
 
 export default async function ReportsPage() {
   const supabase = await createClient();
@@ -283,69 +284,7 @@ export default async function ReportsPage() {
         <h2 className="mb-4 text-lg font-semibold text-slate-900">
           User Progress
         </h2>
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    User
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Assigned
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Completed
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    In Progress
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Not Started
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Avg Quiz %
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Quiz Attempts
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {userProgress.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/60">
-                    <td className="px-5 py-3">
-                      <div>
-                        <p className="font-medium text-slate-900">{u.name}</p>
-                        <p className="text-xs text-slate-500">{u.email}</p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-slate-700">{u.assigned}</td>
-                    <td className="px-5 py-3 text-green-700">{u.completed}</td>
-                    <td className="px-5 py-3 text-amber-700">{u.inProgress}</td>
-                    <td className="px-5 py-3 text-slate-500">{u.notStarted}</td>
-                    <td className="px-5 py-3 text-slate-700">
-                      {u.avgQuizScore !== null ? `${u.avgQuizScore}%` : "—"}
-                    </td>
-                    <td className="px-5 py-3 text-slate-700">
-                      {u.totalAttempts}
-                    </td>
-                  </tr>
-                ))}
-                {userProgress.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-5 py-8 text-center text-slate-400"
-                    >
-                      No users yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <UserProgressTable rows={userProgress} />
       </section>
 
       {/* Course Performance */}
