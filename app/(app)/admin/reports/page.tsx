@@ -22,6 +22,7 @@ export default async function ReportsPage() {
     { data: allUsers },
     { data: allCourses },
     { data: allAssignments },
+    { data: allCategoryLinks },
     { data: allAttempts },
     { data: allAnswers },
     { data: allQuestions },
@@ -31,6 +32,9 @@ export default async function ReportsPage() {
     supabase
       .from("course_assignments")
       .select("id, course_id, user_id, status, assigned_at, completed_at"),
+    supabase
+      .from("course_category_links")
+      .select("course_id, course_categories ( name )"),
     supabase
       .from("quiz_attempts")
       .select(
@@ -110,6 +114,21 @@ export default async function ReportsPage() {
     };
   });
 
+  // Map course_id -> category names (via the join table).
+  const categoryLinks = allCategoryLinks ?? [];
+  const categoriesByCourse = new Map<string, string[]>();
+  for (const link of categoryLinks) {
+    const courseId = (link as { course_id: string }).course_id;
+    const cc = (link as { course_categories: unknown }).course_categories;
+    const name = Array.isArray(cc)
+      ? (cc[0] as { name?: string })?.name
+      : (cc as { name?: string } | null)?.name;
+    if (!name) continue;
+    const existing = categoriesByCourse.get(courseId) ?? [];
+    existing.push(name);
+    categoriesByCourse.set(courseId, existing);
+  }
+
   // --- Course Performance ---
   const coursePerformance = courses.map((c) => {
     const courseAssignments = assignments.filter((a) => a.course_id === c.id);
@@ -133,6 +152,7 @@ export default async function ReportsPage() {
       id: c.id,
       title: c.title,
       status: c.status,
+      categories: categoriesByCourse.get(c.id) ?? [],
       totalAssigned: courseAssignments.length,
       completed: completed.length,
       inProgress: courseAssignments.filter((a) => a.status === "in_progress")

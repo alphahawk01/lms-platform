@@ -6,6 +6,7 @@ export type CoursePerformanceRow = {
   id: string;
   title: string;
   status: string;
+  categories: string[];
   totalAssigned: number;
   completed: number;
   inProgress: number;
@@ -16,6 +17,7 @@ export type CoursePerformanceRow = {
 type SortKey =
   | "title"
   | "status"
+  | "category"
   | "totalAssigned"
   | "completed"
   | "inProgress"
@@ -29,8 +31,18 @@ export function CoursePerformanceTable({
 }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortKey>("title");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  // Distinct categories for the filter dropdown.
+  const allCategories = useMemo(
+    () =>
+      Array.from(new Set(rows.flatMap((r) => r.categories))).sort((a, b) =>
+        a.localeCompare(b)
+      ),
+    [rows]
+  );
 
   const view = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -38,16 +50,25 @@ export function CoursePerformanceTable({
       .filter(
         (r) =>
           r.title.toLowerCase().includes(search.toLowerCase()) &&
-          (statusFilter === "all" || r.status === statusFilter)
+          (statusFilter === "all" || r.status === statusFilter) &&
+          (categoryFilter === "all"
+            ? true
+            : categoryFilter === "__none__"
+              ? r.categories.length === 0
+              : r.categories.includes(categoryFilter))
       )
       .sort((a, b) => {
         if (sortBy === "title") return a.title.localeCompare(b.title) * dir;
         if (sortBy === "status") return a.status.localeCompare(b.status) * dir;
+        if (sortBy === "category")
+          return (
+            (a.categories[0] ?? "").localeCompare(b.categories[0] ?? "") * dir
+          );
         const av = (a[sortBy] as number | null) ?? -1;
         const bv = (b[sortBy] as number | null) ?? -1;
         return (av - bv) * dir;
       });
-  }, [rows, search, statusFilter, sortBy, sortDir]);
+  }, [rows, search, statusFilter, categoryFilter, sortBy, sortDir]);
 
   return (
     <div>
@@ -70,6 +91,22 @@ export function CoursePerformanceTable({
           <option value="draft">Draft</option>
           <option value="archived">Archived</option>
         </select>
+        {allCategories.length > 0 && (
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="cursor-pointer rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-pd-red"
+            title="Filter by category"
+          >
+            <option value="all">All categories</option>
+            {allCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+            <option value="__none__">No category</option>
+          </select>
+        )}
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortKey)}
@@ -78,6 +115,7 @@ export function CoursePerformanceTable({
         >
           <option value="title">Sort: Course</option>
           <option value="status">Sort: Status</option>
+          <option value="category">Sort: Category</option>
           <option value="totalAssigned">Sort: Assigned</option>
           <option value="completed">Sort: Completed</option>
           <option value="inProgress">Sort: In Progress</option>
@@ -103,6 +141,9 @@ export function CoursePerformanceTable({
                 </th>
                 <th className="px-5 py-3 font-semibold text-slate-700">
                   Status
+                </th>
+                <th className="px-5 py-3 font-semibold text-slate-700">
+                  Category
                 </th>
                 <th className="px-5 py-3 font-semibold text-slate-700">
                   Assigned
@@ -144,6 +185,22 @@ export function CoursePerformanceTable({
                           : "Draft"}
                     </span>
                   </td>
+                  <td className="px-5 py-3">
+                    {c.categories.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {c.categories.map((cat) => (
+                          <span
+                            key={cat}
+                            className="inline-flex rounded-full bg-pd-red/10 px-2.5 py-0.5 text-xs font-medium text-pd-red"
+                          >
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-slate-700">
                     {c.totalAssigned}
                   </td>
@@ -172,7 +229,7 @@ export function CoursePerformanceTable({
               {view.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-5 py-8 text-center text-slate-400"
                   >
                     No courses found.
