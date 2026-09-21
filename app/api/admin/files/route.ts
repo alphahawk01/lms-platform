@@ -88,3 +88,37 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ file: data });
 }
+
+// PATCH /api/admin/files — update the storage limit (admin-only)
+// body: { limit_bytes: number }
+export async function PATCH(request: Request) {
+  const user = await verifyAdmin();
+  if (!user) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await request.json();
+  const limitBytes = Number(body?.limit_bytes);
+
+  if (!Number.isFinite(limitBytes) || limitBytes <= 0) {
+    return NextResponse.json(
+      { error: "limit_bytes must be a positive number" },
+      { status: 400 }
+    );
+  }
+
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("storage_settings")
+    .update({ limit_bytes: Math.round(limitBytes) })
+    .eq("id", 1)
+    .select("limit_bytes")
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ limitBytes: data?.limit_bytes ?? limitBytes });
+}

@@ -50,6 +50,42 @@ export default function GalleryPage() {
   const [loadingUsage, setLoadingUsage] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Storage-limit edit flow
+  const [editingLimit, setEditingLimit] = useState(false);
+  const [limitGb, setLimitGb] = useState("");
+  const [savingLimit, setSavingLimit] = useState(false);
+  const [limitError, setLimitError] = useState("");
+
+  function openLimitEditor() {
+    setLimitGb((limitBytes / 1073741824).toString());
+    setLimitError("");
+    setEditingLimit(true);
+  }
+
+  async function saveLimit() {
+    const gb = parseFloat(limitGb);
+    if (!Number.isFinite(gb) || gb <= 0) {
+      setLimitError("Enter a valid size in GB.");
+      return;
+    }
+    setSavingLimit(true);
+    setLimitError("");
+    const res = await fetch("/api/admin/files", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ limit_bytes: Math.round(gb * 1073741824) }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setLimitBytes(data.limitBytes ?? Math.round(gb * 1073741824));
+      setEditingLimit(false);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setLimitError(data.error || "Could not update the limit.");
+    }
+    setSavingLimit(false);
+  }
+
   async function load() {
     setLoading(true);
     const res = await fetch("/api/admin/files");
@@ -121,10 +157,56 @@ export default function GalleryPage() {
             <HardDrive size={18} className="text-pd-red" />
             Storage Usage
           </div>
-          <span className="text-sm text-slate-500">
-            {formatBytes(usedBytes)} of {formatBytes(limitBytes)}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500">
+              {formatBytes(usedBytes)} of {formatBytes(limitBytes)}
+            </span>
+            {!editingLimit && (
+              <button
+                onClick={openLimitEditor}
+                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                Edit limit
+              </button>
+            )}
+          </div>
         </div>
+
+        {editingLimit && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <label className="text-sm font-medium text-slate-700">
+              Storage limit
+            </label>
+            <input
+              type="number"
+              min={0.1}
+              step={0.1}
+              value={limitGb}
+              onChange={(e) => setLimitGb(e.target.value)}
+              className="w-24 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-pd-red"
+              autoFocus
+            />
+            <span className="text-sm text-slate-500">GB</span>
+            <button
+              onClick={saveLimit}
+              disabled={savingLimit}
+              className="ml-1 inline-flex items-center gap-1.5 rounded-lg bg-pd-red px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-pd-red-hover disabled:opacity-50"
+            >
+              {savingLimit && <Loader2 size={13} className="animate-spin" />}
+              Save
+            </button>
+            <button
+              onClick={() => setEditingLimit(false)}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+            {limitError && (
+              <span className="text-xs text-red-600">{limitError}</span>
+            )}
+          </div>
+        )}
+
         <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
           <div
             className={`h-full rounded-full transition-all ${
