@@ -40,6 +40,7 @@ const COUNTRIES = [
   "India",
   "Singapore",
   "Malaysia",
+  "Vietnam",
   "Philippines",
   "Indonesia",
   "Japan",
