@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Loader2,
   Trash2,
@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Download,
   ExternalLink,
+  LayoutGrid,
+  List as ListIcon,
 } from "lucide-react";
 
 type FileRow = {
@@ -32,6 +34,22 @@ function formatBytes(bytes: number): string {
   return `${bytes} B`;
 }
 
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }) +
+    " " +
+    d.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+}
+
+type SortKey = "name" | "type" | "date" | "size";
+
 export default function GalleryPage() {
   const [files, setFiles] = useState<FileRow[]>([]);
   const [usedBytes, setUsedBytes] = useState(0);
@@ -40,6 +58,20 @@ export default function GalleryPage() {
   const [filter, setFilter] = useState<"all" | "image" | "video" | "document">(
     "all"
   );
+
+  // Explorer view controls
+  const [view, setView] = useState<"gallery" | "list">("list");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "date" || key === "size" ? "desc" : "asc");
+    }
+  }
 
   // Preview flow
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
@@ -123,9 +155,28 @@ export default function GalleryPage() {
     load();
   }
 
-  const filtered = files.filter((f) =>
-    filter === "all" ? true : f.file_type === filter
-  );
+  const filtered = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    return files
+      .filter((f) => (filter === "all" ? true : f.file_type === filter))
+      .sort((a, b) => {
+        switch (sortKey) {
+          case "name":
+            return a.file_name.localeCompare(b.file_name) * dir;
+          case "type":
+            return a.file_type.localeCompare(b.file_type) * dir;
+          case "size":
+            return (a.size_bytes - b.size_bytes) * dir;
+          case "date":
+          default:
+            return (
+              (new Date(a.created_at).getTime() -
+                new Date(b.created_at).getTime()) *
+              dir
+            );
+        }
+      });
+  }, [files, filter, sortKey, sortDir]);
 
   const pct = Math.min(100, (usedBytes / limitBytes) * 100);
   const isFull = usedBytes >= limitBytes;
@@ -226,29 +277,82 @@ export default function GalleryPage() {
         )}
       </div>
 
-      {/* Filter tabs */}
-      <div className="mb-5 flex gap-2">
-        {(["all", "image", "video", "document"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setFilter(t)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
-              filter === t
-                ? "bg-pd-red text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
+      {/* Explorer toolbar */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Type filter */}
+        <div className="flex gap-1.5">
+          {(["all", "image", "video", "document"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
+                filter === t
+                  ? "bg-pd-red text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {t}
+              {t !== "all" && (
+                <span className="ml-1.5 text-xs opacity-70">
+                  {files.filter((f) => f.file_type === t).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="ml-auto flex items-center gap-3">
+          {/* Sort (used mainly in gallery view; list view sorts via headers) */}
+          <select
+            value={`${sortKey}:${sortDir}`}
+            onChange={(e) => {
+              const [k, d] = e.target.value.split(":");
+              setSortKey(k as SortKey);
+              setSortDir(d as "asc" | "desc");
+            }}
+            className="cursor-pointer rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-pd-red"
+            title="Sort"
           >
-            {t}
-            {t !== "all" && (
-              <span className="ml-1.5 text-xs opacity-70">
-                {files.filter((f) => f.file_type === t).length}
-              </span>
-            )}
-          </button>
-        ))}
+            <option value="date:desc">Newest first</option>
+            <option value="date:asc">Oldest first</option>
+            <option value="name:asc">Name (A–Z)</option>
+            <option value="name:desc">Name (Z–A)</option>
+            <option value="size:desc">Size (large→small)</option>
+            <option value="size:asc">Size (small→large)</option>
+            <option value="type:asc">Type</option>
+          </select>
+
+          {/* View toggle */}
+          <div className="flex overflow-hidden rounded-lg border border-slate-300">
+            <button
+              onClick={() => setView("list")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition ${
+                view === "list"
+                  ? "bg-pd-red text-white"
+                  : "bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+              title="List view"
+            >
+              <ListIcon size={16} />
+              List
+            </button>
+            <button
+              onClick={() => setView("gallery")}
+              className={`flex items-center gap-1.5 border-l border-slate-300 px-3 py-1.5 text-sm font-medium transition ${
+                view === "gallery"
+                  ? "bg-pd-red text-white"
+                  : "bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+              title="Gallery view"
+            >
+              <LayoutGrid size={16} />
+              Gallery
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* File grid */}
+      {/* Files */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
@@ -259,7 +363,84 @@ export default function GalleryPage() {
             Files uploaded to courses, quizzes, and chats will appear here.
           </p>
         </div>
+      ) : view === "list" ? (
+        /* LIST (Details) VIEW */
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div className="max-h-[600px] overflow-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
+                <tr>
+                  <SortHeader
+                    label="Name"
+                    active={sortKey === "name"}
+                    dir={sortDir}
+                    onClick={() => toggleSort("name")}
+                  />
+                  <SortHeader
+                    label="Type"
+                    active={sortKey === "type"}
+                    dir={sortDir}
+                    onClick={() => toggleSort("type")}
+                  />
+                  <SortHeader
+                    label="Date uploaded"
+                    active={sortKey === "date"}
+                    dir={sortDir}
+                    onClick={() => toggleSort("date")}
+                  />
+                  <SortHeader
+                    label="Size"
+                    active={sortKey === "size"}
+                    dir={sortDir}
+                    onClick={() => toggleSort("size")}
+                  />
+                  <th className="px-4 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((f) => (
+                  <tr
+                    key={f.id}
+                    className="cursor-pointer hover:bg-slate-50/60"
+                    onClick={() => setPreviewFile(f)}
+                  >
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <FileTypeThumb file={f} />
+                        <span className="truncate font-medium text-slate-900">
+                          {f.file_name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 capitalize text-slate-500">
+                      {f.file_type}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-slate-500">
+                      {formatDate(f.created_at)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-slate-500">
+                      {formatBytes(f.size_bytes)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDelete(f);
+                        }}
+                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                        title="Delete file"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* GALLERY (icon) VIEW */
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((f) => (
             <div
@@ -293,6 +474,9 @@ export default function GalleryPage() {
               <div className="p-3">
                 <p className="truncate text-sm font-medium text-slate-900">
                   {f.file_name}
+                </p>
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  {formatDate(f.created_at)}
                 </p>
                 <div className="mt-1 flex items-center justify-between">
                   <span className="text-xs text-slate-400">
@@ -487,5 +671,53 @@ export default function GalleryPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function SortHeader({
+  label,
+  active,
+  dir,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  dir: "asc" | "desc";
+  onClick: () => void;
+}) {
+  return (
+    <th className="px-4 py-2.5 font-semibold text-slate-700">
+      <button
+        onClick={onClick}
+        className="inline-flex items-center gap-1 transition hover:text-pd-red"
+      >
+        {label}
+        <span className="text-xs text-slate-400">
+          {active ? (dir === "asc" ? "↑" : "↓") : ""}
+        </span>
+      </button>
+    </th>
+  );
+}
+
+function FileTypeThumb({ file }: { file: FileRow }) {
+  if (file.file_type === "image") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={file.file_url}
+        alt={file.file_name}
+        className="h-8 w-8 shrink-0 rounded object-cover"
+      />
+    );
+  }
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-100">
+      {file.file_type === "video" ? (
+        <VideoIcon size={16} className="text-slate-400" />
+      ) : (
+        <FileText size={16} className="text-slate-400" />
+      )}
+    </span>
   );
 }
