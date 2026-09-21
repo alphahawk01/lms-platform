@@ -31,15 +31,24 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const { full_name, role } = body;
+  const { full_name, role, location } = body;
 
   const admin = createAdminClient();
 
-  // Update profile name if provided
-  if (full_name !== undefined) {
+  // Update profile fields if any provided (name and/or location).
+  if (full_name !== undefined || location !== undefined) {
+    const profileUpdate: {
+      id: string;
+      full_name?: string;
+      location?: string | null;
+    } = { id };
+    if (full_name !== undefined) profileUpdate.full_name = full_name.trim();
+    if (location !== undefined)
+      profileUpdate.location = location?.trim() || null;
+
     const { error: profileError } = await admin
       .from("profiles")
-      .upsert({ id, full_name: full_name.trim() }, { onConflict: "id" });
+      .upsert(profileUpdate, { onConflict: "id" });
 
     if (profileError) {
       return NextResponse.json(
@@ -48,10 +57,12 @@ export async function PATCH(
       );
     }
 
-    // Also update auth user metadata so it stays in sync
-    await admin.auth.admin.updateUserById(id, {
-      user_metadata: { full_name: full_name.trim() },
-    });
+    // Keep auth user metadata's full_name in sync when it changes.
+    if (full_name !== undefined) {
+      await admin.auth.admin.updateUserById(id, {
+        user_metadata: { full_name: full_name.trim() },
+      });
+    }
   }
 
   // Update role if provided

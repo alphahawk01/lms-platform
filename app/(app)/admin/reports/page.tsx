@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { UserProgressTable } from "@/components/user-progress-table";
+import { CoursePerformanceTable } from "@/components/course-performance-table";
 
 export default async function ReportsPage() {
   const supabase = await createClient();
@@ -292,90 +293,7 @@ export default async function ReportsPage() {
         <h2 className="mb-4 text-lg font-semibold text-slate-900">
           Course Performance
         </h2>
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Course
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Assigned
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Completed
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    In Progress
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Completion %
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-slate-700">
-                    Avg Days to Complete
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {coursePerformance.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/60">
-                    <td className="px-5 py-3 font-medium text-slate-900">
-                      {c.title}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          c.status === "published"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {c.status === "published" ? "Published" : "Draft"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-slate-700">
-                      {c.totalAssigned}
-                    </td>
-                    <td className="px-5 py-3 text-green-700">{c.completed}</td>
-                    <td className="px-5 py-3 text-amber-700">{c.inProgress}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-16 overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-full rounded-full bg-pd-red"
-                            style={{ width: `${c.completionRate}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-slate-600">
-                          {c.completionRate}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-slate-700">
-                      {c.avgCompletionDays !== null
-                        ? `${c.avgCompletionDays} days`
-                        : "—"}
-                    </td>
-                  </tr>
-                ))}
-                {coursePerformance.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-5 py-8 text-center text-slate-400"
-                    >
-                      No courses yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <CoursePerformanceTable rows={coursePerformance} />
       </section>
 
       {/* Quiz Analytics */}

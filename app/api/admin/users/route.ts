@@ -41,7 +41,7 @@ export async function GET() {
   // Fetch all profiles and roles in bulk to enrich
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, full_name");
+    .select("id, full_name, location");
 
   const { data: allRoles } = await admin
     .from("user_roles")
@@ -49,6 +49,13 @@ export async function GET() {
 
   const profileMap = new Map(
     (profiles ?? []).map((p) => [p.id, p.full_name])
+  );
+
+  const locationMap = new Map(
+    (profiles ?? []).map((p) => [
+      p.id,
+      (p as { location?: string | null }).location ?? "",
+    ])
   );
 
   const roleMap = new Map(
@@ -77,6 +84,7 @@ export async function GET() {
         u.user_metadata?.full_name ??
         "",
       role: roleMap.get(u.id) ?? "learner",
+      location: locationMap.get(u.id) ?? "",
       status,
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at,

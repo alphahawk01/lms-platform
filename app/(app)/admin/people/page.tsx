@@ -22,6 +22,7 @@ type User = {
   email: string;
   full_name: string;
   role: string;
+  location: string;
   status: "active" | "invited" | "archived";
   created_at: string;
   last_sign_in_at: string | null;
@@ -38,8 +39,15 @@ export default function PeoplePage() {
   // Sort & filter controls
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<
-    "name" | "email" | "role" | "status" | "last_sign_in" | "created"
+    | "name"
+    | "email"
+    | "role"
+    | "location"
+    | "status"
+    | "last_sign_in"
+    | "created"
   >("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -55,6 +63,7 @@ export default function PeoplePage() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
+  const [editLocation, setEditLocation] = useState("");
   const [saving, setSaving] = useState(false);
   const [editMessage, setEditMessage] = useState("");
 
@@ -151,6 +160,7 @@ export default function PeoplePage() {
       body: JSON.stringify({
         full_name: editName.trim(),
         role: editRole,
+        location: editLocation.trim(),
       }),
     });
 
@@ -281,13 +291,23 @@ export default function PeoplePage() {
     }
   }
 
+  // Distinct locations for the filter dropdown
+  const locations = Array.from(
+    new Set(users.map((u) => u.location).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
   const filteredUsers = users
     .filter(
       (u) =>
         (u.full_name.toLowerCase().includes(search.toLowerCase()) ||
           u.email.toLowerCase().includes(search.toLowerCase())) &&
         (roleFilter === "all" || u.role === roleFilter) &&
-        (statusFilter === "all" || u.status === statusFilter)
+        (statusFilter === "all" || u.status === statusFilter) &&
+        (locationFilter === "all"
+          ? true
+          : locationFilter === "__none__"
+            ? !u.location
+            : u.location === locationFilter)
     )
     .sort((a, b) => {
       const dir = sortDir === "asc" ? 1 : -1;
@@ -296,6 +316,8 @@ export default function PeoplePage() {
           return a.email.localeCompare(b.email) * dir;
         case "role":
           return a.role.localeCompare(b.role) * dir;
+        case "location":
+          return (a.location || "").localeCompare(b.location || "") * dir;
         case "status":
           return a.status.localeCompare(b.status) * dir;
         case "last_sign_in": {
@@ -419,6 +441,21 @@ export default function PeoplePage() {
         </select>
 
         <select
+          value={locationFilter}
+          onChange={(e) => setLocationFilter(e.target.value)}
+          className="cursor-pointer rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-pd-red"
+          title="Filter by location"
+        >
+          <option value="all">All locations</option>
+          {locations.map((loc) => (
+            <option key={loc} value={loc}>
+              {loc}
+            </option>
+          ))}
+          <option value="__none__">No location</option>
+        </select>
+
+        <select
           value={sortBy}
           onChange={(e) =>
             setSortBy(e.target.value as typeof sortBy)
@@ -429,6 +466,7 @@ export default function PeoplePage() {
           <option value="name">Sort: Name</option>
           <option value="email">Sort: Email</option>
           <option value="role">Sort: Role</option>
+          <option value="location">Sort: Location</option>
           <option value="status">Sort: Status</option>
           <option value="last_sign_in">Sort: Last sign in</option>
           <option value="created">Sort: Date added</option>
@@ -452,6 +490,9 @@ export default function PeoplePage() {
               <th className="px-6 py-3.5 font-semibold text-slate-700">Name</th>
               <th className="px-6 py-3.5 font-semibold text-slate-700">Email</th>
               <th className="px-6 py-3.5 font-semibold text-slate-700">Role</th>
+              <th className="px-6 py-3.5 font-semibold text-slate-700">
+                Location
+              </th>
               <th className="px-6 py-3.5 font-semibold text-slate-700">Status</th>
               <th className="px-6 py-3.5 font-semibold text-slate-700">
                 Last sign in
@@ -466,7 +507,7 @@ export default function PeoplePage() {
             {filteredUsers.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-6 py-10 text-center text-slate-400"
                 >
                   No users found.
@@ -483,6 +524,9 @@ export default function PeoplePage() {
                     <span className="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-700">
                       {u.role}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">
+                    {u.location || "—"}
                   </td>
                   <td className="px-6 py-4">
                     <span
@@ -522,6 +566,7 @@ export default function PeoplePage() {
                           setEditUser(u);
                           setEditName(u.full_name);
                           setEditRole(u.role);
+                          setEditLocation(u.location || "");
                           setEditMessage("");
                         }}
                         className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -694,6 +739,20 @@ export default function PeoplePage() {
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">
+                  Location{" "}
+                  <span className="text-slate-400">(country)</span>
+                </label>
+                <input
+                  type="text"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  placeholder="e.g. Australia"
+                  className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-pd-red"
+                />
               </div>
 
               {editMessage && (
