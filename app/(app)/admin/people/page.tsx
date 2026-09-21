@@ -408,7 +408,7 @@ export default function PeoplePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-7xl">
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
@@ -531,8 +531,8 @@ export default function PeoplePage() {
 
       {/* Users table (scrolls ~10 rows) */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="max-h-[560px] overflow-y-auto">
-        <table className="w-full text-left text-sm">
+        <div className="max-h-[560px] overflow-auto">
+        <table className="w-full min-w-[900px] text-left text-sm whitespace-nowrap">
           <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
             <tr>
               <th className="px-6 py-3.5 font-semibold text-slate-700">Name</th>
