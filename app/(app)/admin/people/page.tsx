@@ -28,6 +28,32 @@ type User = {
   last_sign_in_at: string | null;
 };
 
+// Countries available for the inline location dropdown.
+const COUNTRIES = [
+  "Australia",
+  "New Zealand",
+  "United Kingdom",
+  "Ireland",
+  "United States",
+  "Canada",
+  "South Africa",
+  "India",
+  "Singapore",
+  "Malaysia",
+  "Philippines",
+  "Indonesia",
+  "Japan",
+  "China",
+  "Germany",
+  "France",
+  "Spain",
+  "Italy",
+  "Netherlands",
+  "Brazil",
+  "Argentina",
+  "United Arab Emirates",
+];
+
 export default function PeoplePage() {
   const router = useRouter();
 
@@ -74,6 +100,27 @@ export default function PeoplePage() {
   // Account actions (edit modal)
   const [actionLoading, setActionLoading] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+
+  // Inline location save (per row)
+  const [savingLocationId, setSavingLocationId] = useState<string | null>(null);
+
+  async function saveLocationInline(userId: string, location: string) {
+    // Optimistically update the row.
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, location } : u))
+    );
+    setSavingLocationId(userId);
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ location }),
+    });
+    setSavingLocationId(null);
+    if (!res.ok) {
+      // Revert by refetching on failure.
+      fetchUsers();
+    }
+  }
 
   // Bulk import state
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -525,8 +572,34 @@ export default function PeoplePage() {
                       {u.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-600">
-                    {u.location || "—"}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={u.location || ""}
+                        onChange={(e) =>
+                          saveLocationInline(u.id, e.target.value)
+                        }
+                        disabled={savingLocationId === u.id}
+                        className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-pd-red disabled:opacity-50"
+                        title="Set location"
+                      >
+                        <option value="">— None —</option>
+                        {u.location && !COUNTRIES.includes(u.location) && (
+                          <option value={u.location}>{u.location}</option>
+                        )}
+                        {COUNTRIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      {savingLocationId === u.id && (
+                        <Loader2
+                          size={14}
+                          className="animate-spin text-slate-400"
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span
